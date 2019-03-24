@@ -2,6 +2,7 @@
 <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML 2.0//EN'>
 <html>
 <head>
+	<meta charset="UTF-8" />
 	<title>418 I’m a teapot</title>
 </head>
 <body>
