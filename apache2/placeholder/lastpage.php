@@ -14,7 +14,9 @@
 							You can safely turn off your computer and come back to life.
 						</p>
 						<hr/>
-						<address><? echo preg_replace(".*/", "RealWorld/", preg_replace(" .*", "", getenv('SERVER_SOFTWARE'))) ?> Server at <? echo ereg_replace("^www\.", "", getenv('HTTP_HOST')) ?> Port <? echo getenv('SERVER_PORT') ?></address>
+						<address><?php
+						echo preg_replace(":.*/:", "RealWorld/",preg_replace(": .*:", "",getenv('SERVER_SOFTWARE')));
+						?> Server at <?php echo preg_replace(":^www\.:", "", getenv('HTTP_HOST')) ?> Port <?php echo getenv('SERVER_PORT'); ?></address>
 	          </td>
 	        </tr>
 	      </table>
