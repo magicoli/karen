@@ -4,7 +4,10 @@ PermitLocalCommand yes
 ForwardX11 no
 
 host fredrika
-  hostname fredrika.magiiic.com
+  hostname friendzone.magiiic.com
+
+host friendzone
+  hostname friendzone.magiiic.com
 
 host hal
      hostname hal.magiiic.com
@@ -21,9 +24,15 @@ host joni
 host khadja
   hostname khadja.magiiic.com
 
+host miley
+  hostname miley.magiiic.com
+
 host vaughan
   hostname vaughan.magiiic.com
 
 host libertiboat
   hostname libertiboat.fr
   user libertiboat
+
+host git
+  hostname git.magiiic.com
