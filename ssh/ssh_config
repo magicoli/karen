@@ -3,6 +3,9 @@ PermitLocalCommand yes
 
 ForwardX11 no
 
+host gotye
+  hostname gotye.magiiic.com
+
 host fredrika
   hostname friendzone.magiiic.com
 
