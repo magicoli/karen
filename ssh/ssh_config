@@ -30,9 +30,12 @@ host khadja
 host miley
   hostname miley.magiiic.com
 
-host vaughan
-  hostname vaughan.magiiic.com
+host pam
+  hostname pam.magiiic.com
 
+host sinead
+  hostname sinead.local
+  
 host libertiboat
   hostname libertiboat.fr
   user libertiboat
