@@ -1,11 +1,10 @@
 hal.magiiic.com 176.9.57.247 2a01:4f8:150:90e5::2
 herbie.magiiic.com 5.9.10.132 2a01:4f8:160:804b::2
 izia.magiiic.com 116.203.129.88 2a01:4f8:c2c:11f8::1
-ns1.magiiic.com 116.203.4.138 2a01:4f8:c2c:11f8::2
+ns1.magiiic.com alias 116.203.4.138 2a01:4f8:c2c:11f8::2
 joni.magiiic.com 116.203.38.47 2a01:4f8:c2c:676::1
-ns2.magiiic.com 116.203.4.184 2a01:4f8:c2c:676::2
+ns2.magiiic.com alias 116.203.4.184 2a01:4f8:c2c:676::2
 khadja.magiiic.com 116.203.134.57 2a01:4f8:c2c:28bc::1
 friendzone.magiiic.com 116.203.134.1 2a01:4f8:c2c:28b5::1
 miley.magiiic.com 116.203.149.46 2a01:4f8:c2c:379e::1
-vaughan.magiiic.com 94.130.170.154 2a01:4f8:c0c:4397::2
 gotye.magiiic.com 116.203.144.21 2a01:4f8:c2c:3604::1 
