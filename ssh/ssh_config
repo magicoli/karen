@@ -33,6 +33,9 @@ host miley
 host pam
   hostname pam.magiiic.com
 
+host queen
+  hostname queen.magiiic.com
+
 host sinead
   hostname sinead.local
   
