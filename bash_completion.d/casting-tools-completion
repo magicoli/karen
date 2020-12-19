@@ -1,0 +1,22 @@
+# bash completion for casting tools
+
+_newcasting()
+{
+  local cur
+  COMPREPLY=()
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case $COMP_CWORD in
+    1)
+    COMPREPLY=( $(cd ~/castings 2>/dev/null && compgen -d -- "$cur") )
+      ;;
+    2)
+    COMPREPLY=( $(cd ~/castings/${COMP_WORDS[1]} 2>/dev/null && compgen -d -- "$cur") )
+      ;;
+    3)
+    COMPREPLY=( $(cd ~/castings/${COMP_WORDS[1]}/${COMP_WORDS[2]} 2>/dev/null && compgen -d -- "$cur") )
+    ;;
+  esac
+}
+complete -F _newcasting newcasting
+complete -F _newcasting casting-server
+complete -F _newcasting casting-client
