@@ -1,14 +1,19 @@
 hal.magiiic.com 176.9.57.247 2a01:4f8:150:90e5::2
 herbie.magiiic.com 5.9.10.132 2a01:4f8:160:804b::2
+miley.magiiic.com 116.203.149.46 2a01:4f8:c2c:379e::1
+
 izia.magiiic.com 116.203.129.88 2a01:4f8:c2c:11f8::1
 ns1.magiiic.com alias 116.203.4.138 2a01:4f8:c2c:11f8::2
 joni.magiiic.com 116.203.38.47 2a01:4f8:c2c:676::1
 ns2.magiiic.com alias 116.203.4.184 2a01:4f8:c2c:676::2
+gotye.magiiic.com 116.203.144.21 2a01:4f8:c2c:3604::1 
+
 khadja.magiiic.com 116.203.134.57 2a01:4f8:c2c:28bc::1
 friendzone.magiiic.com 116.203.134.1 2a01:4f8:c2c:28b5::1
-miley.magiiic.com 116.203.149.46 2a01:4f8:c2c:379e::1
-gotye.magiiic.com 116.203.144.21 2a01:4f8:c2c:3604::1 
+eloges.magiiic.com 116.203.128.32 2a01:4f8:c0c:cfd0::1
+samuel.magiiic.com 159.69.199.154 2a01:4f8:c2c:c90e::1
+
 pam.magiiic.com 195.201.30.194 2a01:4f8:c2c:5a19::1 
 queen.magiiic.com 116.203.114.179 2a01:4f8:c2c:5480::1 
-eloges.magiiic.com 116.203.128.32 2a01:4f8:c0c:cfd0::1
+
 turner.magiiic.com 192.168.8.3
