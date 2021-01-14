@@ -20,3 +20,5 @@ _newcasting()
 complete -F _newcasting newcasting
 complete -F _newcasting casting-server
 complete -F _newcasting casting-client
+complete -F _newcasting castingbill
+complete -F _newcasting castingbill2
