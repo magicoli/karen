@@ -1,4 +1,4 @@
-# This is Magic's way 
+# This is Magic's way
 
 if [ "`id -u`" -eq 0 ]; then
   PS1='# '
@@ -15,4 +15,4 @@ addPath "/opt/magic/bin"
 #[ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
 
 which emacs >/dev/null && export EDITOR=emacs
-alias sudo='sudo env PATH=/home/magic/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/magic/bin:/home/magic/.local/bin:/opt/opensim/bin:/home/magic/.composer/vendor/bin'
+alias sudo='sudo env PATH=$PATH'
