@@ -1,20 +1,38 @@
 # Magic's helpers for bash profiles
-
-addPath() {
+if [ ! "$PROFILE_HELPERS" ]
+then
+  PROFILE_HELPERS=/opt/magic/etc/profile.d/0-helpers.sh
+  # echo BEEN THERE $PROFILE_HELPERS
+  addPath() {
     for path in $@
     do
-	echo ":$PATH:" | grep -q ":$path:" && continue
-	[ -d "$path" ] && PATH="$PATH:$path"
+      # echo ":$PATH:" | grep -q ":$path:" && continue
+      [ -d "$path" ] && PATH="$PATH:$path"
     done
-}
+    cleanPath
+  }
 
-addPathBefore() {
-    for path in $@
+  addPathBefore() {
+    for path in $(echo $@ | tr ' ' '\n' | tac | tr '\n' ' ')
     do
-	echo ":$PATH:" | grep -q ":$path:" && continue
-	[ -d "$path" ] && PATH="$path:$PATH"
+      # echo ":$PATH:" | grep -q ":$path:" && continue
+      [ -d "$path" ] && PATH="$path:$PATH"
     done
-}
+    cleanPath
+  }
 
-#alias dusort='du -sk ./* | sort -n | cut -f 2 | while read folder; do du -sh "$folder"; done'
-alias dusort='ls -d ./.* ./ | grep -v "^\./\.*$" | while read item; do du -sk "$item"; done  | sort -n | cut -f 2 | while read item; do du -sh "$item" | sed "s|[[:blank:]]\.||"; done'
+  cleanPath() {
+    keepifs=$IFS
+    IFS=:
+    for path in $PATH
+    do
+      path=$(echo $path | sed "s:/$::")
+      [ -d $path ] || continue
+      echo ":$newpath:" | grep -q ":$path:" && continue
+      newpath="$newpath:$path"
+    done
+    IFS=$keepifs
+    PATH=$(echo $newpath | sed "s/^://")
+  }
+fi
+cleanPath 2>/dev/null
