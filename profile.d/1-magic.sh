@@ -20,3 +20,5 @@ then
   alias sudo='sudo env PATH=$PATH'
 fi
 cleanPath 2>/dev/null
+
+alias cdreal='cd $(realpath "$PWD")'
