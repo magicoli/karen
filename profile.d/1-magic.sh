@@ -12,7 +12,7 @@ then
 
   umask 0002
 
-  addPathBefore ~/bin /opt/magic/bin ~/.local/bin
+  addPathBefore ~/bin /opt/wrap/bin /opt/magic/bin ~/.local/bin
 
   #[ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
 
