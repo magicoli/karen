@@ -24,12 +24,18 @@ then
   cleanPath() {
     keepifs=$IFS
     IFS=:
+    newpath=
     for path in $PATH
     do
       path=$(echo $path | sed "s:/$::")
+      # echo "trying $path" >&2
+      # echo "  current path $newpath" >&2
       [ -d $path ] || continue
+      # echo "  $path exists" >&2
       echo ":$newpath:" | grep -q ":$path:" && continue
+      # echo "  $path is not there yet" >&2
       newpath="$newpath:$path"
+      # echo "  new path is $newpath" >&2
     done
     IFS=$keepifs
     PATH=$(echo $newpath | sed "s/^://")
