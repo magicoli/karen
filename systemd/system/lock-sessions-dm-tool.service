@@ -1,0 +1,18 @@
+[Unit]
+Description=loginctl lock-sessions on sleep
+Documentation=man:loginctl(1)
+Before=sleep.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/logger --tag "loginctl" --priority auth.info "Session: Locking all user sessions"
+Environment=XDG_SEAT_PATH=/org/freedesktop/DisplayManager/Seat0
+ExecStart=dm-tool lock
+RemainAfterExit=no
+StandardOutput=journal
+
+[Install]
+#Alias=sleep.target/loginctl--lock-sessions.service
+WantedBy=sleep.target
+
+# https://ubuntu-mate.community/t/how-to-lock-screen-on-suspend/16836
