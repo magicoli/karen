@@ -17,7 +17,7 @@ then
   #[ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
 
   which emacs >/dev/null && export EDITOR=emacs
-  alias sudo='sudo env PATH=$PATH'
+#  hostname -I | grep -q "^(192|10)\." && alias sudo='sudo env PATH=$PATH'
 fi
 cleanPath 2>/dev/null
 
