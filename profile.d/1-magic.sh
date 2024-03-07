@@ -22,3 +22,5 @@ fi
 cleanPath 2>/dev/null
 
 alias cdreal='cd $(realpath "$PWD")'
+
+export COMPOSER_DEFAULT_VENDOR=magicoli
