@@ -1,0 +1,16 @@
+#/etc/systemd/system/text-generation-webui.service
+#/etc/systemd/system/textgen.service
+[Unit]
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /opt/text-generation-webui/start_linux.sh
+User=magic
+Group=magic
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=text_generation_webui
+
+[Install]
+WantedBy=multi-user.target
