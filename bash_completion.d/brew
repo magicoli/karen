@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# run /usr/local/etc/bash_completion if on macos and brew is installe
+if [ "$(uname)" == "Darwin" ]; then
+	prefix=$(brew --prefix || echo /usr/local)
+	[ -f $prefix/etc/bash_completion ] && . $prefix/etc/bash_completion || {
+		for script in $(brew --prefix)/etc/bash_completion.d/*; do
+			[ -f $script ] && . $script
+		done
+	}
+fi
