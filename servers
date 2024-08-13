@@ -7,7 +7,7 @@ joni.magiiic.com 116.203.38.47 2a01:4f8:c2c:676::1
 ns2.magiiic.com alias 116.203.4.184 2a01:4f8:c2c:676::2
 gotye.magiiic.com 116.203.144.21 2a01:4f8:c2c:3604::1
 mungo.magiiic.com 157.90.119.147 2a01:4f8:c0c:2701::1 10.0.0.4
-nextcloud 116.203.183.155 2a01:4f8:1c1b:48ae::1 10.0.0.3
+nextcloud.magiiic.com 116.203.183.155 2a01:4f8:1c1b:48ae::1 10.0.0.3
 
 khadja.magiiic.com 116.203.134.57 2a01:4f8:c2c:28bc::1
 mosaiques.magiiic.com 37.27.40.66 2a01:4f9:c012:5f21::1
