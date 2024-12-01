@@ -6,16 +6,23 @@ ns1.magiiic.com alias 116.203.4.138 2a01:4f8:c2c:11f8::2
 joni.magiiic.com 116.203.38.47 2a01:4f8:c2c:676::1
 ns2.magiiic.com alias 116.203.4.184 2a01:4f8:c2c:676::2
 gotye.magiiic.com 116.203.144.21 2a01:4f8:c2c:3604::1
+mungo.magiiic.com 157.90.119.147 2a01:4f8:c0c:2701::1 10.0.0.4
+nextcloud.magiiic.com 116.203.183.155 2a01:4f8:1c1b:48ae::1 10.0.0.3
 
 khadja.magiiic.com 116.203.134.57 2a01:4f8:c2c:28bc::1
+mosaiques.magiiic.com 37.27.40.66 2a01:4f9:c012:5f21::1
 eloges.magiiic.com 116.203.128.32 2a01:4f8:c0c:cfd0::1
 sam.magiiic.com 49.12.236.14 2a01:4f8:c2c:8adc::1
 hodiamont.magiiic.com 88.198.146.23 2a01:4f8:c0c:7534::1
+ln24.studio 128.140.6.51 2a01:4f8:1c1e:782f::1 
 
 friendzone.magiiic.com 116.203.134.1 2a01:4f8:c2c:28b5::1
 
-pam.magiiic.com 195.201.30.194 2a01:4f8:c2c:5a19::1
+grid.speculoos.world 95.217.6.1 2a01:4f9:c012:81bc::1
+#grandplace.speculoos.world 37.27.44.67 2a01:4f9:c012:6a29::1
+redoutable.speculoos.world 65.21.58.128 2a01:4f9:c011:b013::1
+residences.speculoos.world 65.109.134.98 2a01:4f9:c010:e2ef::1
+#pam.magiiic.com 195.201.30.194 2a01:4f8:c2c:5a19::1
 queen.magiiic.com 116.203.114.179 2a01:4f8:c2c:5480::1
 way.magiiic.com 188.34.198.148 2a01:4f8:1c1e:5266::1
 
-ln24.studio
