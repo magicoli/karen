@@ -174,4 +174,5 @@ export PATH=/opt/magic/bin:/opt/wrap/bin:/opt/opensim/bin:$PATH
 . /opt/magic/etc/bash_completion.d/brew
 export EDITOR=emacs
 
+[ -f /opt/magic/etc/git-prompt ] && . /opt/magic/etc/git-prompt
 [ -f ~/etc/git-prompt ] && . ~/etc/git-prompt
