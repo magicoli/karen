@@ -1,0 +1,28 @@
+{
+  "name": "wrap",
+  "description": "WordPress-based authentication for third-party applications via .htaccess",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git@git.magiiic.com:wordpress/plugins/wrap.git"
+  },
+  "author": "Olivier van Helden",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "start": "grunt default",
+    "readme": "grunt readme",
+    "i18n": "grunt i18n"
+  },
+  "devDependencies": {
+    "grunt": "^1.6.1",
+    "grunt-contrib-concat": "^2.1.0",
+    "grunt-text-replace": "^0.4.0",
+    "grunt-wp-i18n": "^1.0.3",
+    "grunt-wp-readme-to-markdown": "^2.1.0"
+  },
+  "dependencies": {
+    "grunt-contrib-clean": "^2.0.1",
+    "grunt-contrib-copy": "^1.0.0"
+  }
+}

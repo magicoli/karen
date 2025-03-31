@@ -1,0 +1,16 @@
+#*#
+*~
+\#*\#
+.apdisk
+.DS_Store
+htaccess
+/node_modules/
+phpcs.xml
+phpunit.xml
+*.sql
+*.tar.gz
+Thumbs.db
+/vendor/
+wp-cli.local.yml
+*.zip
+src/test-*
