@@ -2,17 +2,6 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
-# Avoid zsh deprecation message on macOS
-export BASH_SILENCE_DEPRECATION_WARNING=1
-
-export LANG="fr_FR.UTF-8"
-export LC_ALL="fr_FR.UTF-8"
-export LANGUAGE="fr_FR.UTF-8"
-
-if [ -f ~/.env ]; then
-    . ~/.env
-fi
-
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
@@ -67,12 +56,22 @@ if [ -n "$force_color_prompt" ]; then
     fi
 fi
 
+parse_git_branch() {
+     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+}
+parse_git_folder() {
+  toplevel=$(git rev-parse --show-toplevel 2>/dev/null)
+  [ "$toplevel" = "" ] && pwd && return
+  project=$(basename "$toplevel")
+  pwd | sed "s:^$toplevel:$project:"
+}
+
 build_prompt () {
   PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h '
   toplevel=$(git rev-parse --show-toplevel 2>/dev/null)
   if [ "$toplevel"  = "" ]
   then
-    w=$(pwd | sed "s:^$HOME:~:" | xargs basename)
+    w=$(pwd | sed "s:^$HOME:~:")
     PS1+="\[\033[01;34m\]$w"
   else
     project=$(basename "$toplevel")
@@ -86,6 +85,14 @@ build_prompt () {
   PS1+=' \[\033[01;32m\]\$\[\e[0m\] '
 }
 PROMPT_COMMAND=build_prompt
+
+# if [ "$color_prompt" = yes ]; then
+#   # PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\W\[\033[00m\]\$ '
+#   # PS1="${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\] \[\e[34m\]\$(parse_git_folder) \[\e[91m\]\$(parse_git_branch)\[\e[00m\]$ "
+# else
+#   PS1='${debian_chroot:+($debian_chroot)}\u@\h:\W\$ '
+# fi
+# unset color_prompt force_color_prompt
 
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
@@ -140,6 +147,9 @@ if ! shopt -oq posix; then
   fi
 fi
 
+export PNPM_HOME="/home/magic/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+
 [ -e ~/etc/magic.bashrc ] && . ~/etc/magic.bashrc
 
 # pnpm
@@ -166,12 +176,3 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
-export PATH=/opt/magic/bin:/opt/wrap/bin:/opt/opensim/bin:$PATH
-
-[ -f /usr/local/etc/bash_completion ] && . /usr/local/etc/bash_completion
-
-. /opt/magic/etc/bash_completion.d/ssh
-. /opt/magic/etc/bash_completion.d/brew
-export EDITOR=emacs
-
-[ -f ~/etc/git-prompt ] && . ~/etc/git-prompt
