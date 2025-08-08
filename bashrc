@@ -176,3 +176,5 @@ export EDITOR=emacs
 
 [ -f /opt/magic/etc/git-prompt ] && . /opt/magic/etc/git-prompt
 [ -f ~/etc/git-prompt ] && . ~/etc/git-prompt
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8

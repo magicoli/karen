@@ -1,0 +1,9 @@
+
+if [[ -n "$VSCODE_SHELL_INTEGRATION" && -n "$VSCODE_GIT_ASKPASS_MAIN" ]]; then
+    # Extract the server path from VSCode's own environment
+    VSCODE_SERVER_PATH="$(echo "$VSCODE_GIT_ASKPASS_MAIN" | sed "s:/extensions/.*:/bin/remote-cli:")"
+    if [[ -d "$VSCODE_SERVER_PATH" ]]; then
+        echo ":$PATH:" | grep -q ":$VSCODE_SERVER_PATH:" || export PATH="$VSCODE_SERVER_PATH:$PATH"
+    fi
+    which code >&2 || echo "Could not find 'code' executable" >&2
+fi
