@@ -1,0 +1,38 @@
+# AGNSTK Test Configuration  
+# Testing on port 8080 (HTTP) to avoid conflicts with Apache
+
+# Global options
+{
+    # Use custom port for testing
+    http_port 8080
+    https_port 8443
+    
+    # Disable automatic HTTPS for testing
+    auto_https off
+}
+
+# AGNSTK Laravel application
+agnstk.org, dev.agnstk.org {
+    root * /home/magic/domains/agnstk.org/www
+    
+    # Laravel-specific configuration
+    encode gzip
+    
+    # Handle Laravel routing
+    try_files {path} {path}/ /index.php?{query}
+    
+    # PHP FastCGI
+    php_fastcgi unix//run/php/php8.3-fpm.sock {
+        read_timeout 60s
+        write_timeout 60s
+    }
+    
+    # Static file serving  
+    file_server
+    
+    # Logging for performance analysis
+    log {
+        output file /var/log/caddy/agnstk.org-access.log
+        format console
+    }
+}
