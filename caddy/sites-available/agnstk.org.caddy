@@ -1,48 +1,41 @@
+# Temporarily combined in Caddyfile for easier testing
+# /etc/caddy/sites-enabled/agnstk.org.caddy
 agnstk.org, dev.agnstk.org {
 	root * /home/magic/domains/agnstk.org/www
 	encode gzip
-	try_files {path} {path}/ /index.php?{query}
-	php_fastcgi unix//run/php/php8.3-fpm.sock
 
-    # Security: Block sensitive files
-    @block_env path *.env*
-    respond @block_env 403
-    @block_logs path *.log
-    respond @block_logs 403
-    @block_composer path composer.*
-    respond @block_composer 403
-    @block_artisan path /agnstk/artisan
-    respond @block_artisan 403
+	# Handle AGNSTK application
+	handle /agnstk* {
+		root * /home/magic/domains/agnstk.org/www
+		
+		# Serve static files from agnstk/core/public directly (first priority)
+		handle /agnstk/core/public/* {
+			root * /home/magic/domains/agnstk.org/www/agnstk/core/public
+			rewrite * {path}
+			file_server
+		}
 
+		# All other agnstk requests: try static files first, then agnstk/index.php
+		handle {
+			try_files {path} {path}/ /agnstk/index.php?{query}
+			php_fastcgi unix//run/php/php8.3-fpm.sock
+		}
+	}
 
-    # Serve static assets from /agnstk/core/public
-    @agnstk_core_public {
-        path /agnstk/core/public/*
-    }
-    handle @agnstk_core_public {
-        root * /home/magic/domains/agnstk.org/www/agnstk/core/public
-        file_server
-    }
+	# Handle WordPress application
+	handle /wp* {
+		root * /home/magic/domains/agnstk.org/www
+		try_files {path} {path}/ /wp/index.php?{query}
+		php_fastcgi unix//run/php/php8.3-fpm.sock
+	}
 
-    # Laravel front controller for /agnstk subfolder: only non-existing files (except in public)
-    @agnstk_php {
-        path_regexp agnstk_path ^/agnstk(?:/.*)?$
-        not file
-        not path_regexp ^/agnstk/core/public/
-    }
-    handle @agnstk_php {
-        try_files {path} {path}/ /agnstk/index.php?{query}
-        php_fastcgi unix//run/php/php8.3-fpm.sock {
-            read_timeout 60s
-            write_timeout 60s
-        }
-    }
-
+	# Handle everything else (static files, root level files)
 	file_server
 
 	log {
 		output file /var/log/caddy/agnstk.org.access.log
 		format console
 	}
-    tls internal
+
+	import local_config
 }

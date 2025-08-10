@@ -1,0 +1,60 @@
+gites-mosaiques.com, *.gites-mosaiques.com {
+    root * /home/mosaiques/domains/gites-mosaiques.com/www
+    encode gzip
+    
+    # Add error logging
+    log {
+        output file /var/log/caddy/gites-mosaiques.com.access.log
+        format console
+    }
+    
+    # Add error log
+    log error {
+        output file /var/log/caddy/gites-mosaiques.com.error.log
+    }
+    
+    # PHP-FPM status and ping endpoints (restrict access if needed)
+    handle /status {
+        php_fastcgi unix//run/php/php8.3-fpm.sock
+    }
+    handle /ping {
+        php_fastcgi unix//run/php/php8.3-fpm.sock
+    }
+    
+    # WordPress-specific rules
+    try_files {path} {path}/ /index.php?{query}
+    
+    # PHP processing
+    php_fastcgi unix//run/php/php8.3-fpm.sock {
+        # Pass additional PHP variables if needed
+        env PATH_INFO {path_info}
+        env SCRIPT_NAME {fastcgi_script_name}
+        # Add timing headers for debugging
+        env REQUEST_TIME_FLOAT {time_start_iso}
+    }
+    
+    # Serve static files with caching
+    @static {
+        file
+        path *.css *.js *.ico *.woff* *.ttf *.svg *.jpg *.jpeg *.png *.gif *.webp *.pdf
+    }
+    handle @static {
+        header Cache-Control "public, max-age=31536000"
+        file_server
+    }
+    
+    # Serve other files
+    file_server
+    
+    # Security headers (optional but recommended)
+    header {
+        # Remove server info
+        -Server
+        # Add security headers
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        # Add performance timing header
+        X-Response-Time {time_start_iso}
+    }
+}

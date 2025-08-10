@@ -7,55 +7,14 @@
 # import /etc/caddy/sites-enabled/*.caddy
 
 # On dev servers:
-(local_config) {
-	tls internal
-}
-
-# On production servers:
 # (local_config) {
+# 	tls internal
 # }
 
-# End of /etc/caddy/Caddyfile
-
-
-# Temporarily combined in Caddyfile for easier testing
-# /etc/caddy/sites-enabled/agnstk.org.caddy
-agnstk.org, dev.agnstk.org {
-	root * /home/magic/domains/agnstk.org/www
-	encode gzip
-
-	# Handle AGNSTK application
-	handle /agnstk* {
-		root * /home/magic/domains/agnstk.org/www
-		
-		# Serve static files from agnstk/core/public directly (first priority)
-		handle /agnstk/core/public/* {
-			root * /home/magic/domains/agnstk.org/www/agnstk/core/public
-			rewrite * {path}
-			file_server
-		}
-
-		# All other agnstk requests: try static files first, then agnstk/index.php
-		handle {
-			try_files {path} {path}/ /agnstk/index.php?{query}
-			php_fastcgi unix//run/php/php8.3-fpm.sock
-		}
-	}
-
-	# Handle WordPress application
-	handle /wp* {
-		root * /home/magic/domains/agnstk.org/www
-		try_files {path} {path}/ /wp/index.php?{query}
-		php_fastcgi unix//run/php/php8.3-fpm.sock
-	}
-
-	# Handle everything else (static files, root level files)
-	file_server
-
-	log {
-		output file /var/log/caddy/agnstk.org.access.log
-		format console
-	}
-
-	import local_config
+# On production servers:
+(local_config) {
 }
+
+import /etc/caddy/sites-enabled/*.caddy
+
+# End of /etc/caddy/Caddyfile
