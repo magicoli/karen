@@ -1,0 +1,20 @@
+# https://ubuntu-mate.community/t/how-to-lock-screen-on-suspend/16836
+# save or softlink as /etc/systemd/system/lock-sessions-dm-tool.service
+# sudo systemctl enable lock-sessions-dm-tool
+
+[Unit]
+Description=lock-sessions on sleep with dm-tool
+Documentation=man:dm-tool(1)
+Before=sleep.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/logger --tag "lock-sessions" --priority auth.info "Session: Locking all user sessions"
+Environment=XDG_SEAT_PATH=/org/freedesktop/DisplayManager/Seat0
+ExecStart=dm-tool lock
+RemainAfterExit=no
+StandardOutput=journal
+
+[Install]
+#Alias=sleep.target/lock-sessions--lock-sessions.service
+WantedBy=sleep.target
