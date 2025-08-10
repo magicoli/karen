@@ -9,11 +9,15 @@
             "email": "olivier@van-helden.net"
         }
     ],
+    "require": {
+        "czproject/git-php": "^4.3"
+    },
     "require-dev": {
         "wp-coding-standards/wpcs": "^3.1",
         "magicoli/php-bump-library": "^1.0"
     },
     "config": {
+        "vendor-dir": "lib",
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
