@@ -4,7 +4,58 @@
 {
 	# Other global options (optional)
 }
-# import /etc/caddy/sites-enabled/*.caddy
+
+# Reusable snippets for all sites
+(security_headers) {
+    header {
+        # Remove server info
+        -Server
+        # Add security headers
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        # Add performance timing header
+        X-Response-Time {time_start_iso}
+    }
+}
+
+(static_files) {
+    # Serve static files with caching
+    @static {
+        file
+        path *.css *.js *.ico *.woff* *.ttf *.svg *.jpg *.jpeg *.png *.gif *.webp *.pdf
+    }
+    handle @static {
+        header Cache-Control "public, max-age=31536000"
+        file_server
+    }
+    
+    # Serve other files
+    file_server
+}
+
+(standard_logs) {
+    # Add error logging
+    log {
+        output file /var/log/caddy/{args[0]}.access.log
+        format console
+    }
+    
+    # Add error log
+    log error {
+        output file /var/log/caddy/{args[0]}.error.log
+    }
+}
+
+(php_monitoring) {
+    # PHP-FPM status and ping endpoints (restrict access if needed)
+    handle /status {
+        php_fastcgi unix//run/php/php8.3-fpm.sock
+    }
+    handle /ping {
+        php_fastcgi unix//run/php/php8.3-fpm.sock
+    }
+}
 
 # On dev servers:
 # (local_config) {
