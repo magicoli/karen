@@ -61,13 +61,13 @@ create_symlink \
 # PHP Configuration (both Apache and FPM)
 echo -e "\n${YELLOW}🐘 PHP Configuration${NC}"
 create_symlink \
-    "/opt/magic/etc/php/8.3/apache2/conf.d/magiiic-optimization.ini" \
-    "/etc/php/8.3/apache2/conf.d/magiiic-optimization.ini" \
+    "/opt/magic/etc/php/8.3/apache2/conf.d/magiiic-php-boost.ini" \
+    "/etc/php/8.3/apache2/conf.d/magiiic-php-boost.ini" \
     "PHP Apache optimizations"
 
 create_symlink \
-    "/opt/magic/etc/php/8.3/fpm/conf.d/magiiic-optimization.ini" \
-    "/etc/php/8.3/fpm/conf.d/magiiic-optimization.ini" \
+    "/opt/magic/etc/php/8.3/fpm/conf.d/magiiic-php-boost.ini" \
+    "/etc/php/8.3/fpm/conf.d/magiiic-php-boost.ini" \
     "PHP FPM optimizations"
 
 create_symlink \
