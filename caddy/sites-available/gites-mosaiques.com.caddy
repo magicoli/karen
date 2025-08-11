@@ -4,11 +4,10 @@ gites-mosaiques.com, *.gites-mosaiques.com {
     encode gzip
     
     # Use global snippets
-    import standard_logs gites-mosaiques.com
+    import enhanced_logs gites-mosaiques.com
     import php_monitoring
 
     import /etc/caddy/snippets/wordpress.caddy
-    
     
     # Use global snippets for static files and security
     import static_files

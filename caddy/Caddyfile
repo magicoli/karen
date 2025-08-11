@@ -7,54 +7,73 @@
 
 # Reusable snippets for all sites
 (security_headers) {
-    header {
-        # Remove server info
-        -Server
-        # Add security headers
-        X-Content-Type-Options nosniff
-        X-Frame-Options DENY
-        X-XSS-Protection "1; mode=block"
-        # Add performance timing header
-        X-Response-Time {time_start_iso}
-    }
+	header {
+		# Remove server info
+		-Server
+		# Add security headers
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		X-XSS-Protection "1; mode=block"
+		# Add performance timing header
+		X-Response-Time {time_start_iso}
+	}
 }
 
 (static_files) {
-    # Serve static files with caching
-    @static {
-        file
-        path *.css *.js *.ico *.woff* *.ttf *.svg *.jpg *.jpeg *.png *.gif *.webp *.pdf
-    }
-    handle @static {
-        header Cache-Control "public, max-age=31536000"
-        file_server
-    }
-    
-    # Serve other files
-    file_server
+	# Serve static files with caching
+	@static {
+		file
+		path *.css *.js *.ico *.woff* *.ttf *.svg *.jpg *.jpeg *.png *.gif *.webp *.pdf
+	}
+	handle @static {
+		header Cache-Control "public, max-age=31536000"
+		file_server
+	}
+
+	# Serve other files
+	file_server
+}
+
+# Enhanced error logging for debugging
+(enhanced_logs) {
+	log {
+		output file /var/log/caddy/{args[0]}.access.log {
+			roll_size 100MiB
+			roll_keep 5
+		}
+		format console
+	}
+
+	log error {
+		output file /var/log/caddy/{args[0]}.error.logg {
+			roll_size 100MiB
+			roll_keep 5
+		}
+		level DEBUG
+	}
 }
 
 (standard_logs) {
-    # Add error logging
-    log {
-        output file /var/log/caddy/{args[0]}.access.log
-        format console
-    }
-    
-    # Add error log
-    log error {
-        output file /var/log/caddy/{args[0]}.error.log
-    }
+	# Add error logging
+	log {
+		output file /var/log/caddy/{args[0]}.access.log
+		format console
+	}
+
+	# Add error log
+	log error {
+		output file /var/log/caddy/{args[0]}.error.log
+	}
 }
 
 (php_monitoring) {
-    # PHP-FPM status and ping endpoints (restrict access if needed)
-    handle /status {
-        php_fastcgi unix//run/php/php8.3-fpm.sock
-    }
-    handle /ping {
-        php_fastcgi unix//run/php/php8.3-fpm.sock
-    }
+	# PHP-FPM status and ping endpoints (restrict access if needed)
+	handle /status {
+		php_fastcgi unix//run/php/php8.3-fpm.sock
+	}
+	handle /ping {
+		php_fastcgi unix//run/php/php8.3-fpm.sock
+	}
 }
 
 # On dev servers:
@@ -69,3 +88,29 @@
 import /etc/caddy/sites-enabled/*.caddy
 
 # End of /etc/caddy/Caddyfile
+
+# # Example from https://caddy.community/t/setting-up-wordpress-with-caddy-on-ubuntu/18448
+# gites-mosaiques.com, *.gites-mosaiques.com {
+# 	# good practice to signal on behalf of who 
+# 	# are the certs getting issue
+# 	# tls your@email.com
+
+# 	# logs are optional
+# 	log {
+# 		output file /var/log/caddy/gites-mosaiques.com.access.log
+# 		format console
+# 	}
+
+# 	root * /home/mosaiques/domains/gites-mosaiques.com/www
+# 	encode gzip
+# 	file_server
+# 	php_fastcgi unix//run/php/php-fpm.sock
+
+# 	@disallowed {
+# 		path /xmlrpc.php
+# 		path *.sql
+# 		path /wp-content/uploads/*.php
+# 	}
+
+# 	rewrite @disallowed '/index.php'
+# }

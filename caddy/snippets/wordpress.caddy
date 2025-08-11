@@ -1,4 +1,23 @@
 # WordPress-specific rules (site-specific)
+#
+# to fix the temp directory access (affecting updates and cache)
+#
+# - Disable caching during tests...
+# - Add to wp-config.php:
+#       define('FS_METHOD', 'direct');
+#       ini_set('session.save_path','/srv/example.org/tmp/sessions');
+#
+# - Other temp files directories can be set in 
+#   /etc/php/<version>/fpm/conf.d/example.org.ini
+#       sys_temp_dir="/srv/example.org/tmp"
+#       upload_tmp_dir="/srv/example.org/tmp/uploads"
+#       session.save_path="/srv/example.org/tmp/sessions"
+#       ; (save_path seems to be ignored there)
+#
+# - Apply proper permissions to temp directories:
+#       chown www-data:www-data <path>
+#       chmod u+rwX,go+rX <path>
+
 try_files {path} {path}/ /index.php?{query}
 
 # PHP processing (site-specific for WordPress)
