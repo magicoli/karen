@@ -14,7 +14,7 @@ This directory contains a performance-optimized Apache configuration following t
 ```
 /opt/magic/etc/
 ├── apache2/
-│   ├── conf.d/
+│   ├── conf/
 │   │   ├── macros.conf                    # Main macros (VHostPHP, VHostWordPress, etc.)
 │   │   └── performance-environment.conf   # Environment detection & settings
 │   ├── snippets/
@@ -27,12 +27,12 @@ This directory contains a performance-optimized Apache configuration following t
 │   │   ├── roundcube.conf                 # Roundcube webmail rules
 │   │   ├── wrap-app.conf                  # Magic Wrap CMS rules
 │   │   └── angstk.conf                    # Angstk framework rules
-│   └── sites-available/
+│   └── sites/
 │       ├── gites-mosaiques.com-clean.conf # Example clean site config
 │       └── ...
 └── php/
     └── 8.3/fmp/
-        ├── conf.d/
+        ├── conf/
         │   ├── magiiic-defaults.ini       # Generic PHP settings
         │   ├── magiiic-dev.ini            # Development-only settings
         │   └── magiiic-prod.ini           # Production-only settings
@@ -169,7 +169,7 @@ The system automatically detects environment:
 3. **Environment settings** (`magiiic-dev.ini` OR `magiiic-prod.ini`)
 4. **Pool overrides** (in `pool.d/*.conf`) - **these win!**
 
-**Important**: Settings like `session.save_path`, `open_basedir`, and `upload_tmp_dir` can ONLY be set properly in pool configs, not in conf.d files.
+**Important**: Settings like `session.save_path`, `open_basedir`, and `upload_tmp_dir` can ONLY be set properly in pool configs, not in conf files.
 
 ## Benefits
 

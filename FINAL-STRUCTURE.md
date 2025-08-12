@@ -5,7 +5,7 @@
 ```
 /opt/magic/etc/
 ├── apache2/
-│   ├── conf.d/
+│   ├── conf/
 │   │   ├── semantic-macros.conf           # Semantic macros (WordPress, Nextcloud, etc.)
 │   │   └── performance-environment.conf   # Environment detection & global settings
 │   ├── snippets/
@@ -20,11 +20,11 @@
 │   │   ├── roundcube.conf                 # Roundcube webmail rules
 │   │   ├── wrap-app.conf                  # Magic Wrap CMS rules
 │   │   └── angstk.conf                    # Angstk framework rules
-│   └── sites-available/
+│   └── sites/
 │       └── gites-mosaiques.com.conf       # FINAL - minimal semantic config
 └── php/
     └── 8.3/fpm/
-        ├── conf.d/
+        ├── conf/
         │   ├── magiiic-defaults.ini       # Generic PHP settings
         │   ├── magiiic-dev.ini            # Development-only settings  
         │   ├── magiiic-prod.ini           # Production-only settings
@@ -114,4 +114,4 @@ Use Webmail mysite example.org /path/to/docroot mail/
 ✅ **Semantic names** - `USE_WWW_POOL` not `SITE_SOCKET`  
 ✅ **Clean structure** - no `-clean`, `-optimized`, `-better` variants  
 ✅ **Git-friendly** - direct edits, reset if broken  
-✅ **5 files per site max** - Apache, PHP conf.d, PHP pool.d, + Caddy files
+✅ **5 files per site max** - Apache, PHP conf, PHP pool.d, + Caddy files

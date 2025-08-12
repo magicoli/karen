@@ -54,15 +54,15 @@ restart_service() {
 # MySQL Configuration
 echo -e "\n${YELLOW}📊 MySQL Configuration${NC}"
 create_symlink \
-    "/opt/magic/etc/mysql/conf.d/magiiic-innodb.cnf" \
-    "/etc/mysql/conf.d/magiiic-innodb.cnf" \
+    "/opt/magic/etc/mysql/conf/magiiic-innodb.cnf" \
+    "/etc/mysql/conf/magiiic-innodb.cnf" \
     "MySQL InnoDB optimizations"
 
 # PHP Configuration (both Apache and FPM)
 echo -e "\n${YELLOW}🐘 PHP Configuration${NC}"
 create_symlink \
-    "/opt/magic/etc/php/8.3/apache2/conf.d/magiiic-php-boost.ini" \
-    "/etc/php/8.3/apache2/conf.d/magiiic-php-boost.ini" \
+    "/opt/magic/etc/php/8.3/apache2/conf/magiiic-php-boost.ini" \
+    "/etc/php/8.3/apache2/conf/magiiic-php-boost.ini" \
     "PHP Apache optimizations"
 
 create_symlink \
@@ -85,7 +85,7 @@ create_symlink \
 # Create sites-enabled directory and link
 mkdir -p /etc/caddy/sites-enabled
 create_symlink \
-    "/opt/magic/etc/caddy/sites-available/gites-mosaiques.com.caddyfile" \
+    "/opt/magic/etc/caddy/sites/gites-mosaiques.com.caddyfile" \
     "/etc/caddy/sites-enabled/gites-mosaiques.com.caddyfile" \
     "Caddy site configuration"
 

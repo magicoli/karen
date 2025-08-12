@@ -118,9 +118,9 @@ deploy_configuration() {
     mkdir -p "$backup_dir"
     
     # Backup existing configuration
-    if [[ -d "$APACHE_ETC/sites-available" ]]; then
-        cp -r "$APACHE_ETC/sites-available" "$backup_dir/"
-        log_info "Backed up existing sites-available to $backup_dir"
+    if [[ -d "$APACHE_ETC/sites" ]]; then
+        cp -r "$APACHE_ETC/sites" "$backup_dir/"
+        log_info "Backed up existing sites to $backup_dir"
     fi
     
     # Deploy snippets
@@ -129,9 +129,9 @@ deploy_configuration() {
         log_success "Deployed Apache snippets"
     fi
     
-    # Deploy conf.d files
-    if [[ -d "$MAGIC_ETC/apache2/conf.d" ]]; then
-        for conf_file in "$MAGIC_ETC/apache2/conf.d"/*.conf; do
+    # Deploy conf files
+    if [[ -d "$MAGIC_ETC/apache2/conf" ]]; then
+        for conf_file in "$MAGIC_ETC/apache2/conf"/*.conf; do
             if [[ -f "$conf_file" ]]; then
                 cp "$conf_file" "$APACHE_ETC/conf-available/"
                 local basename_conf=$(basename "$conf_file")
