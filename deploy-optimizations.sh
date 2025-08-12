@@ -85,8 +85,8 @@ create_symlink \
 # Create sites-enabled directory and link
 mkdir -p /etc/caddy/sites-enabled
 create_symlink \
-    "/opt/magic/etc/caddy/sites-available/gites-mosaiques.com.caddy" \
-    "/etc/caddy/sites-enabled/gites-mosaiques.com.caddy" \
+    "/opt/magic/etc/caddy/sites-available/gites-mosaiques.com.caddyfile" \
+    "/etc/caddy/sites-enabled/gites-mosaiques.com.caddyfile" \
     "Caddy site configuration"
 
 # Create log directories

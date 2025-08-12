@@ -3,6 +3,8 @@
 # Global options
 {
 	# Other global options (optional)
+
+	import /etc/caddy/local-server.*.caddyfile
 }
 
 # Reusable snippets for all sites
@@ -82,10 +84,10 @@
 # }
 
 # On production servers:
-(local_config) {
-}
+# (local_config) {11:40 PM11:40 PM
+# }
 
-import /etc/caddy/sites-enabled/*.caddy
+import /etc/caddy/sites-enabled/*.caddyfile
 
 # End of /etc/caddy/Caddyfile
 

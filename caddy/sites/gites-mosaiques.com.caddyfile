@@ -1,0 +1,17 @@
+*.gites-mosaiques.com {
+	# Site-specific settings
+	root * /home/mosaiques/domains/gites-mosaiques.com/www
+	encode gzip
+
+	import /etc/caddy/local-site.*.caddyfile
+
+	# Use global snippets
+	import enhanced_logs gites-mosaiques.com
+	import php_monitoring
+
+	import /etc/caddy/snippets/wordpress.caddyfile
+
+	# Use global snippets for static files and security
+	import static_files
+	import security_headers
+}

@@ -1,5 +1,5 @@
 # Temporarily combined in Caddyfile for easier testing
-# /etc/caddy/sites-enabled/agnstk.org.caddy
+# /etc/caddy/sites-enabled/agnstk.org.caddyfile
 agnstk.org, dev.agnstk.org {
 	root * /home/magic/domains/agnstk.org/www
 	encode gzip
