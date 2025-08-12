@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# SSL Certificate Information Tool
+# Shows certificate details served by web server
+
+set -e
+
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <domain-name>"
+    echo "Example: $0 example.com"
+    exit 1
+fi
+
+DOMAIN=$1
+
+echo "=== SSL Certificate for ${DOMAIN} ==="
+
+# Test SSL connection and get certificate info
+if curl -k -s --connect-timeout 5 "https://${DOMAIN}" >/dev/null 2>&1; then
+    CERT_INFO=$(echo | openssl s_client -connect "${DOMAIN}:443" -servername "${DOMAIN}" 2>/dev/null | openssl x509 -noout -text)
+    
+    # Basic certificate info
+    echo "$CERT_INFO" | grep -E "Issuer:" | sed 's/^//'
+    echo "$CERT_INFO" | grep -E "Subject:" | sed 's/^//'
+    
+    # Validity dates
+    NOT_BEFORE=$(echo "$CERT_INFO" | grep "Not Before" | sed 's/.*Not Before: //')
+    NOT_AFTER=$(echo "$CERT_INFO" | grep "Not After" | sed 's/.*Not After : //')
+    echo "Not Before: $NOT_BEFORE"
+    echo "Not After : $NOT_AFTER"
+    
+    # Days remaining
+    EXPIRY_EPOCH=$(date -d "$NOT_AFTER" +%s 2>/dev/null || echo "0")
+    if [ "$EXPIRY_EPOCH" != "0" ]; then
+        NOW_EPOCH=$(date +%s)
+        DAYS_LEFT=$(( (EXPIRY_EPOCH - NOW_EPOCH) / 86400 ))
+        
+        if [ $DAYS_LEFT -gt 30 ]; then
+            echo "Status: Valid ($DAYS_LEFT days remaining)"
+        elif [ $DAYS_LEFT -gt 7 ]; then
+            echo "Status: Expires soon ($DAYS_LEFT days remaining)"
+        else
+            echo "Status: URGENT - Expires in $DAYS_LEFT days"
+        fi
+    fi
+    
+else
+    echo "Error: Cannot connect to https://${DOMAIN}"
+    exit 1
+fi
