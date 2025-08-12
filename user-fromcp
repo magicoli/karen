@@ -1,0 +1,20 @@
+# WordPress .user.ini template for PHP-FPM
+# Copy this file as .user.ini in WordPress document root
+# Values optimized for standard WordPress sites
+
+# WordPress memory for themes/plugins (can be higher for complex sites)
+memory_limit=256M
+
+# WordPress execution time (30s usually sufficient, increase for imports/exports)
+max_execution_time=30
+
+# WordPress forms and media uploads (standard file sizes)
+max_input_vars=3000
+post_max_size=32M
+upload_max_filesize=32M
+
+# WordPress file operations (sufficient for media galleries)
+max_file_uploads=20
+
+# WordPress session handling (24 minutes - standard)
+session.gc_maxlifetime=1440
