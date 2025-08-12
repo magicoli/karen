@@ -5,6 +5,7 @@ mode=${mode:-reload}
 set -e
 
 sudo a2dismod development
+sudo a2dismod status
 sudo a2enmod production
 
 sudo systemctl $mode php8.3-fpm.service

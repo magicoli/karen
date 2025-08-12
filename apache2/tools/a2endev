@@ -6,6 +6,7 @@ set -e
 
 sudo a2dismod production
 sudo a2enmod development
+sudo a2enmod status
 
 sudo systemctl $mode php8.3-fpm.service
 echo $_ ${mode}ed
