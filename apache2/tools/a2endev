@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Default to reload, but allow override via environment variable
+mode=${mode:-reload}
+set -e
+
+sudo a2dismod production
+sudo a2enmod development
+
+sudo systemctl $mode php8.3-fpm.service
+echo $_ ${mode}ed
+
+sudo systemctl $mode apache2.service
+echo $_ ${mode}ed
+echo
+
+sudo systemctl status apache2.service --no-pager
+echo
