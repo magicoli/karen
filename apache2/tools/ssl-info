@@ -5,13 +5,30 @@
 
 set -e
 
+PGM=$(basename $0)
+
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <domain-name>"
-    echo "Example: $0 example.com"
+    echo "Usage: $PGM <domain-or-url>"
+    echo "Examples: $PGM example.com"
+    echo "          $PGM https://example.com"
+    echo "          $PGM https://example.com/path"
     exit 1
 fi
 
-DOMAIN=$1
+# Extract domain from various input formats
+INPUT=$1
+DOMAIN=""
+
+if [[ "$INPUT" =~ ^https?://([^/]+) ]]; then
+    # Extract domain from URL
+    DOMAIN="${BASH_REMATCH[1]}"
+elif [[ "$INPUT" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+    # Plain domain
+    DOMAIN="$INPUT"
+else
+    echo "Error: Invalid domain or URL format"
+    exit 1
+fi
 
 echo "=== SSL Certificate for ${DOMAIN} ==="
 
@@ -20,14 +37,28 @@ if curl -k -s --connect-timeout 5 "https://${DOMAIN}" >/dev/null 2>&1; then
     CERT_INFO=$(echo | openssl s_client -connect "${DOMAIN}:443" -servername "${DOMAIN}" 2>/dev/null | openssl x509 -noout -text)
     
     # Basic certificate info
-    echo "$CERT_INFO" | grep -E "Issuer:" | sed 's/^//'
-    echo "$CERT_INFO" | grep -E "Subject:" | sed 's/^//'
+    echo "$CERT_INFO" | grep -E "Issuer:" | sed 's/^        //'
+    echo "$CERT_INFO" | grep -E "Subject:" | sed 's/^        //'
     
+    # Subject Alternative Names (all domains and wildcards)
+    echo
+    echo "Domains covered by this certificate:"
+    # Get the SAN section and extract all DNS entries
+    SAN_LINE=$(echo "$CERT_INFO" | grep -A1 "X509v3 Subject Alternative Name:" | tail -n1)
+    if [ -n "$SAN_LINE" ]; then
+        echo "$SAN_LINE" | sed 's/DNS://g' | tr ',' '\n' | sed 's/^ */  • /' | sed '/^  • $/d' | sort
+    else
+        # Fallback to subject CN if no SAN
+        CN=$(echo "$CERT_INFO" | grep "Subject:" | sed 's/.*CN = //' | sed 's/,.*//')
+        echo "  • $CN"
+    fi
+    
+    echo
     # Validity dates
     NOT_BEFORE=$(echo "$CERT_INFO" | grep "Not Before" | sed 's/.*Not Before: //')
     NOT_AFTER=$(echo "$CERT_INFO" | grep "Not After" | sed 's/.*Not After : //')
-    echo "Not Before: $NOT_BEFORE"
-    echo "Not After : $NOT_AFTER"
+    echo "Valid From: $NOT_BEFORE"
+    echo "Valid Until: $NOT_AFTER"
     
     # Days remaining
     EXPIRY_EPOCH=$(date -d "$NOT_AFTER" +%s 2>/dev/null || echo "0")
