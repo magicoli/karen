@@ -10,7 +10,7 @@
 # - Other temp files directories can be set in 
 #   /etc/php/<version>/fpm/conf.d/example.org.ini
 #       sys_temp_dir="/srv/example.org/tmp"
-#       upload_tmp_dir="/srv/example.org/tmp/uploads"
+#       upload_tmp_dir="/srv/example.org/tmp/upload"
 #       session.save_path="/srv/example.org/tmp/sessions"
 #       ; (save_path seems to be ignored there)
 #
