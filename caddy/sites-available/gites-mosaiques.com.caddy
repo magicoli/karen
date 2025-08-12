@@ -1,4 +1,4 @@
-gites-mosaiques.com, *.gites-mosaiques.com {
+gites-mosaiques.com, www.gites-mosaiques.com, dev.gites-mosaiques.com {
     # Site-specific settings
     root * /home/mosaiques/domains/gites-mosaiques.com/www
     encode gzip
