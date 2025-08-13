@@ -21,28 +21,28 @@
 │   │   ├── wrap-app.conf                  # Magic Wrap CMS rules
 │   │   └── angstk.conf                    # Angstk framework rules
 │   └── sites/
-│       └── gites-mosaiques.com.conf       # FINAL - minimal semantic config
+│       └── example.com.conf       # FINAL - minimal semantic config
 └── php/
     └── 8.3/fpm/
         ├── conf/
         │   ├── magiiic-defaults.ini       # Generic PHP settings
         │   ├── magiiic-dev.ini            # Development-only settings  
         │   ├── magiiic-prod.ini           # Production-only settings
-        │   └── gites-mosaiques.com.ini    # Site-specific PHP settings (if any)
+        │   └── example.com.ini    # Site-specific PHP settings (if any)
         └── pool.d/
             ├── default.conf               # Default pool settings template
-            └── gites-mosaiques.com-pool.conf  # FINAL - minimal pool config
+            └── example.com-pool.conf  # FINAL - minimal pool config
 ```
 
 ## Key Files Content
 
-### Apache Site Config (`gites-mosaiques.com.conf`)
+### Apache Site Config (`example.com.conf`)
 ```apache
 # WordPress site with semantic features
-Use WordPress gites-mosaiques.com gites-mosaiques.com /home/mosaiques/domains/gites-mosaiques.com/www
+Use WordPress example.com example.com /home/example_user/domains/example.com/www
 
 <VirtualHost *:443>
-  ServerName gites-mosaiques.com
+  ServerName example.com
   Define USE_WWW_POOL  # Enable dedicated PHP-FMP pool
   
   # Activatable features
@@ -51,20 +51,20 @@ Use WordPress gites-mosaiques.com gites-mosaiques.com /home/mosaiques/domains/gi
 </VirtualHost>
 ```
 
-### PHP Pool Config (`gites-mosaiques.com-pool.conf`)
+### PHP Pool Config (`example.com-pool.conf`)
 ```ini
-[gites-mosaiques.com]
-user = mosaiques
-group = mosaiques
-listen = /run/php/php8.3-fmp-gites-mosaiques.com.sock
+[example.com]
+user = example_user
+group = example_user
+listen = /run/php/php8.3-fmp-example.com.sock
 
 # Only site-specific settings (defaults inherited from default.conf)
-php_admin_value[open_basedir] = "/opt/magic/lib:/usr/share:/var/lib:/var/tmp:/home/mosaiques/domains/gites-mosaiques.com:."
-php_admin_value[upload_tmp_dir] = "/home/mosaiques/domains/gites-mosaiques.com/tmp/www"
-php_admin_value[session.save_path] = "/home/mosaiques/domains/gites-mosaiques.com/tmp/www"
-php_admin_value[sendmail_path] = "/usr/sbin/sendmail -t -i -f webmaster@gites-mosaiques.com"
-php_admin_value[error_log] = "/var/log/php/gites-mosaiques.com.error.log"
-slowlog = /var/log/php/gites-mosaiques.com-slow.log
+php_admin_value[open_basedir] = "/opt/magic/lib:/usr/share:/var/lib:/var/tmp:/home/example_user/domains/example.com:."
+php_admin_value[upload_tmp_dir] = "/home/example_user/domains/example.com/tmp/www"
+php_admin_value[session.save_path] = "/home/example_user/domains/example.com/tmp/www"
+php_admin_value[sendmail_path] = "/usr/sbin/sendmail -t -i -f webmaster@example.com"
+php_admin_value[error_log] = "/var/log/php/example.com.error.log"
+slowlog = /var/log/php/example.com-slow.log
 ```
 
 ## Semantic Macros Available

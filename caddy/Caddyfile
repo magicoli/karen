@@ -4,7 +4,7 @@
 {
 	# Other global options (optional)
 
-	import /etc/caddy/local-server.*.caddyfile
+	# import /etc/caddy/local-server.*.caddyfile
 }
 
 # Reusable snippets for all sites
@@ -47,7 +47,7 @@
 	}
 
 	log error {
-		output file /var/log/caddy/{args[0]}.error.logg {
+		output file /var/log/caddy/{args[0]}.error.log {
 			roll_size 100MiB
 			roll_keep 5
 		}

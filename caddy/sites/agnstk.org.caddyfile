@@ -1,13 +1,21 @@
-# Temporarily combined in Caddyfile for easier testing
-# /etc/caddy/sites-enabled/agnstk.org.caddyfile
-agnstk.org, dev.agnstk.org {
+agnstk.org,
+www.agnstk.org,
+dev.agnstk.org,
+agnstk.com,
+www.agnstk.com,
+agnstk.shop,
+www.agnstk.shop,
+agnstk.online,
+www.agnstk.online {
+	# Site-specific settings
 	root * /home/magic/domains/agnstk.org/www
 	encode gzip
 
-	# Handle AGNSTK application
+	import /etc/caddy/local-site.*.caddyfile
+
 	handle /agnstk* {
 		root * /home/magic/domains/agnstk.org/www
-		
+
 		# Serve static files from agnstk/core/public directly (first priority)
 		handle /agnstk/core/public/* {
 			root * /home/magic/domains/agnstk.org/www/agnstk/core/public
@@ -21,21 +29,17 @@ agnstk.org, dev.agnstk.org {
 			php_fastcgi unix//run/php/php8.3-fpm.sock
 		}
 	}
-
-	# Handle WordPress application
-	handle /wp* {
-		root * /home/magic/domains/agnstk.org/www
-		try_files {path} {path}/ /wp/index.php?{query}
-		php_fastcgi unix//run/php/php8.3-fpm.sock
-	}
-
-	# Handle everything else (static files, root level files)
 	file_server
 
-	log {
-		output file /var/log/caddy/agnstk.org.access.log
-		format console
-	}
+	import /etc/caddy/local-site.*.caddyfile
 
-	import local_config
+	# Use global snippets
+	import enhanced_logs agnstk.org
+	import php_monitoring
+
+	import /etc/caddy/snippets/wordpress.caddyfile
+
+	# Use global snippets for static files and security
+	import static_files
+	import security_headers
 }
