@@ -6,7 +6,7 @@ set -euo pipefail
 
 MAGIC_ETC="/opt/magic/etc"
 APACHE_ETC="/etc/apache2"
-PHP_ETC="/etc/php/8.3/fmp"
+PHP_ETC="/etc/php/8.3/fpm"
 
 # Function to detect environment
 detect_environment() {

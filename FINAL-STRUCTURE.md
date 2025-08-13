@@ -13,7 +13,7 @@
 │   │   ├── enhanced-logging.conf          # Enhanced logging (activatable)
 │   │   ├── security-headers.conf          # Security headers
 │   │   ├── static-files.conf              # Caching & compression
-│   │   ├── php-fmp.conf                   # PHP-FPM handling with USE_WWW_POOL
+│   │   ├── php-fpm.conf                   # PHP-FPM handling with USE_WWW_POOL
 │   │   ├── php-monitoring.conf            # PHP monitoring endpoints (activatable)
 │   │   ├── wordpress.conf                 # WordPress rules (minimal)
 │   │   ├── nextcloud-app.conf             # Nextcloud rules  
@@ -43,7 +43,7 @@ Use WordPress example.com example.com /home/example_user/domains/example.com/www
 
 <VirtualHost *:443>
   ServerName example.com
-  Define USE_WWW_POOL  # Enable dedicated PHP-FMP pool
+  Define USE_WWW_POOL  # Enable dedicated PHP-fpm pool
   
   # Activatable features
   IncludeOptional /opt/magic/etc/apache2/snippets/enhanced-logging.conf
@@ -56,7 +56,7 @@ Use WordPress example.com example.com /home/example_user/domains/example.com/www
 [example.com]
 user = example_user
 group = example_user
-listen = /run/php/php8.3-fmp-example.com.sock
+listen = /run/php/php8.3-fpm-example.com.sock
 
 # Only site-specific settings (defaults inherited from default.conf)
 php_admin_value[open_basedir] = "/opt/magic/lib:/usr/share:/var/lib:/var/tmp:/home/example_user/domains/example.com:."

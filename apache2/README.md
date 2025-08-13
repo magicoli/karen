@@ -31,7 +31,7 @@ This directory contains a performance-optimized Apache configuration following t
 │       ├── gites-mosaiques.com-clean.conf # Example clean site config
 │       └── ...
 └── php/
-    └── 8.3/fmp/
+    └── 8.3/fpm/
         ├── conf/
         │   ├── magiiic-defaults.ini       # Generic PHP settings
         │   ├── magiiic-dev.ini            # Development-only settings

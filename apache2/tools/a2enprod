@@ -1,17 +1,41 @@
 #!/bin/bash
 
-# Default to reload, but allow override via environment variable
-mode=${mode:-reload}
 set -e
 
+PGM=$(basename $0)
+BINDIR=$(dirname $(realpath $0))
+BASEDIR=$(dirname $(dirname $BINDIR))
+PHPVER=8.3
+[ -e $BASEDIR/.env ] && . $BASEDIR/.env
+
+mode=${1:-reload}
+if [[ "$mode" != "reload" && "$mode" != "restart" ]]; then
+    echo "Usage: $PGM [reload|restart]"
+    exit 1
+fi
+
 sudo a2dismod development
+
+# Refresh Apache2 config
+sudo rm -f /etc/php/$PHPVER/apache2/conf.d/mod_php-development.ini
+sudo ln -sf $BASEDIR/apache2/mods/*load $BASEDIR/apache2/mods/*conf /etc/apache2/mods-available/
+sudo ln -sf $BASEDIR/apache2/conf/*.conf /etc/apache2/conf-available/
+if [ "$BASEDIR/apache2/snippets" != "$(realpath /etc/apache2/snippets)" ]; then
+    sudo ln -sf $BASEDIR/apache2/snippets/*.conf $BASEDIR/apache2/snippets/*.ini /etc/apache2/snippets/
+fi
+
+# Refresh mod_php config
+sudo ln -sf $BASEDIR/php/$PHPVER/apache2/conf.d/mod_php-common.ini /etc/php/$PHPVER/apache2/conf.d/
+sudo ln -sf $BASEDIR/php/$PHPVER/apache2/conf.d/mod_php-production.ini /etc/php/$PHPVER/apache2/conf.d/
+
+# Refresh php-fpm config
+sudo ln -sf $BASEDIR/php/$PHPVER/fpm/conf.d/*.ini /etc/php/$PHPVER/fpm/conf.d/
+sudo ln -sf $BASEDIR/php/$PHPVER/fpm/pool.d/*.ini /etc/php/$PHPVER/fpm/pool.d/
+
 sudo a2dismod status
 sudo a2enmod production
 
-sudo systemctl $mode php8.3-fpm.service
-echo $_ ${mode}ed
-
-sudo systemctl $mode apache2.service
+sudo systemctl $mode php$PHPVER-fpm.service apache2.service
 echo $_ ${mode}ed
 echo
 
