@@ -1,0 +1,3 @@
+# Production Environment - Automatic HTTPS
+# Uses Let's Encrypt certificates automatically
+# (no TLS directive needed - automatic)

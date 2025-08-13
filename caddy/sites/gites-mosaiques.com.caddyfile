@@ -3,7 +3,8 @@
 	root * /home/mosaiques/domains/gites-mosaiques.com/www
 	encode gzip
 
-	import /etc/caddy/local-site.*.caddyfile
+	# Network configuration (TLS and network-specific settings)
+	import network_settings
 
 	# Use global snippets
 	import enhanced_logs gites-mosaiques.com

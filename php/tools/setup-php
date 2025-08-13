@@ -1,0 +1,71 @@
+#!/bin/bash
+
+PHPVER=${PHPVER:-8.3}
+
+set -e
+
+PGM=$(basename $0)
+BINDIR=$(dirname $(realpath $0))
+MASTER=$(dirname $(dirname $BINDIR))
+
+env=${1:-}
+mode=${2:-reload}
+service=php$PHPVER-fpm.service
+
+env_status() {
+    if [[ -f /etc/php/$PHPVER/apache2/conf.d/mod_php-development.ini ]]; then
+        echo "🛠️  PHP environment: DEVELOPMENT"
+    elif [[ -f /etc/php/$PHPVER/apache2/conf.d/mod_php-production.ini ]]; then
+        echo "🚀 PHP  environment: PRODUCTION"
+    else
+        echo "❌ Unknown PHP environment"
+    fi
+    [ "$env" = "status" ] && exit 0
+}
+
+case "$env" in
+    dev|development)
+        enable=development
+        disable=production
+        ;;
+    prod|production)
+        enable=production
+        disable=development
+        ;;
+    status)
+        env_status
+        exit $?
+        ;;
+    *)
+        env_status
+
+        echo
+        echo "Usage: $PGM {dev|prod}" | grep --color "$PGM.*"
+        echo ""
+        echo "Options:"
+        echo "  dev/development  - Switch to development environment"
+        echo "  prod/production  - Switch to production environment" 
+        echo "  status          - Show current environment"
+        exit
+esac
+
+echo "Switching PHP to $enable environment..."
+
+# # Refresh mod_php config
+sudo rm -f /etc/php/$PHPVER/apache2/conf.d/mod_php-$disable.ini
+sudo ln -sf $MASTER/php/$PHPVER/apache2/conf.d/mod_php-common.ini /etc/php/$PHPVER/apache2/conf.d/
+sudo ln -sf $MASTER/php/$PHPVER/apache2/conf.d/mod_php-$enable.ini /etc/php/$PHPVER/apache2/conf.d/
+
+# Refresh php-fpm config
+sudo ln -sf $MASTER/php/$PHPVER/fpm/conf.d/*.ini /etc/php/$PHPVER/fpm/conf.d/
+sudo ln -sf $MASTER/php/$PHPVER/fpm/pool.d/*.ini /etc/php/$PHPVER/fpm/pool.d/
+
+sudo systemctl $mode $service && err=0 || err=$?
+if [ $err -ne 0 ]; then
+    systemctl status $service --no-pager
+    exit $?
+fi
+
+echo $service ${mode}ed
+
+env_status

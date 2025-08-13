@@ -11,7 +11,8 @@ www.agnstk.online {
 	root * /home/magic/domains/agnstk.org/www
 	encode gzip
 
-	import /etc/caddy/local-site.*.caddyfile
+	# Network configuration (TLS and network-specific settings)
+	import network_settings
 
 	handle /agnstk* {
 		root * /home/magic/domains/agnstk.org/www
@@ -30,8 +31,6 @@ www.agnstk.online {
 		}
 	}
 	file_server
-
-	import /etc/caddy/local-site.*.caddyfile
 
 	# Use global snippets
 	import enhanced_logs agnstk.org

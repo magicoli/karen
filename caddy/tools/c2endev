@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+BINDIR=$(dirname $(realpath $0))
+
+$BINDIR/setup-caddy development $@
