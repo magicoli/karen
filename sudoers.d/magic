@@ -1,3 +1,0 @@
-Defaults	secure_path="/opt/magic/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-magic         ALL = (ALL) NOPASSWD: ALL
