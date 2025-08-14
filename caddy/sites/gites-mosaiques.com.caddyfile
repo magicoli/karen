@@ -1,18 +1,27 @@
-*.gites-mosaiques.com {
+gites-mosaiques.com, www.gites-mosaiques.com, dev.gites-mosaiques.com {
+	# Site variables (Caddy native variables)
+	vars {
+		SITE_NAME "gites-mosaiques.com"
+		SITE_USER "mosaiques"
+		SITE_ROOT "/home/mosaiques/domains/gites-mosaiques.com/www"
+	}
+
 	# Site-specific settings
-	root * /home/mosaiques/domains/gites-mosaiques.com/www
+	root * {vars.SITE_ROOT}
 	encode gzip
+
+	# PHP processing with fixed per-site pool generation
+	import fastcgi_settings {vars.SITE_NAME}
+
+	# WordPress-specific configuration (must be after import fastcgi_settings)
+	import /etc/caddy/snippets/wordpress.caddyfile
 
 	# Network configuration (TLS and network-specific settings)
 	import network_settings
 
-	# Use global snippets
-	import enhanced_logs gites-mosaiques.com
-	import php_monitoring
-
-	import /etc/caddy/snippets/wordpress.caddyfile
-
-	# Use global snippets for static files and security
+	# Use global snippets  
+	import log_settings gites-mosaiques.com
+	import php_monitoring # Use global snippets for static files and security
 	import static_files
 	import security_headers
 }

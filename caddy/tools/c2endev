@@ -4,4 +4,6 @@ set -e
 
 BINDIR=$(dirname $(realpath $0))
 
+echo Running $BINDIR/setup-caddy development $@
+
 $BINDIR/setup-caddy development $@

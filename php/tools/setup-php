@@ -57,10 +57,21 @@ sudo ln -sf $MASTER/php/$PHPVER/apache2/conf.d/mod_php-common.ini /etc/php/$PHPV
 sudo ln -sf $MASTER/php/$PHPVER/apache2/conf.d/mod_php-$enable.ini /etc/php/$PHPVER/apache2/conf.d/
 
 # Refresh php-fpm config
-sudo ln -sf $MASTER/php/$PHPVER/fpm/conf.d/*.ini /etc/php/$PHPVER/fpm/conf.d/
-sudo ln -sf $MASTER/php/$PHPVER/fpm/pool.d/*.ini /etc/php/$PHPVER/fpm/pool.d/
+ls $MASTER/php/$PHPVER/fpm/conf.d/*.ini \
+&& sudo ln -sf $MASTER/php/$PHPVER/fpm/conf.d/*.ini /etc/php/$PHPVER/fpm/conf.d/ \
+|| exit $?
 
-sudo systemctl $mode $service && err=0 || err=$?
+$BINDIR/generate-caddy-pools $env || exit $?
+
+# OK BUT NOT YET
+# Setup systemd drop-in for pool generation
+# sudo mkdir -p /etc/systemd/system/$service.d/
+# if [ -f $MASTER/systemd/system/$service.d/caddy-pools.conf ]; then
+#     sudo ln -sf $MASTER/systemd/system/$service.d/caddy-pools.conf /etc/systemd/system/$service.d/
+#     sudo systemctl daemon-reload
+# fi
+
+sudo systemctl $mode $service --no-pager && err=0 || err=$?
 if [ $err -ne 0 ]; then
     systemctl status $service --no-pager
     exit $?

@@ -62,6 +62,8 @@ case "$env" in
         exit
 esac
 
+$MASTER/php/tools/setup-php $enable $mode
+
 echo "Switching Caddy to $enable environment..."
 
 # Link the main system environment config file
@@ -101,7 +103,7 @@ if ! realpath /etc/caddy/snippets | grep -qv "^$MASTER/etc/caddy/snippets$"; the
     && sudo ln -sf $MASTER/caddy/snippets/*.caddyfile /etc/caddy/snippets/
 fi
 
-sudo systemctl $mode $service && err=0 || err=$?
+sudo systemctl $mode $service --no-pager && err=0 || err=$?
 if [ $err -ne 0 ]; then
     systemctl status $service --no-pager
     exit $?

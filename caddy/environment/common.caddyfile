@@ -43,44 +43,48 @@
 	file_server
 }
 
-# Standard logging
-(standard_logs) {
+# Log settings. Can be overridden with local/log_settings*.caddyfile
+(log_settings) {
 	log {
 		output file /var/log/caddy/{args[0]}.access.log
-		format console
+		# level INFO
 	}
 
-	log error {
-		output file /var/log/caddy/{args[0]}.error.log
-	}
+	import local/log_settings*.caddyfile
+
+	# log {
+	# 	output file /var/log/caddy/{args[0]}.access.log {
+	# 		roll_size 100MiB
+	# 		roll_keep 5
+	# 	}
+	# 	format console
+	# }
+
+	# log error {
+	# 	output file /var/log/caddy/{args[0]}.error.log {
+	# 		roll_size 100MiB
+	# 		roll_keep 5
+	# 	}
+	# 	level DEBUG
+	# }
 }
 
-# Enhanced logging with more details
-(enhanced_logs) {
-	log {
-		output file /var/log/caddy/{args[0]}.access.log {
-			roll_size 100MiB
-			roll_keep 5
-		}
-		format console
-	}
-
-	log error {
-		output file /var/log/caddy/{args[0]}.error.log {
-			roll_size 100MiB
-			roll_keep 5
-		}
-		level DEBUG
-	}
+# PHP-FPM configuration for Caddy (uses site-specific pools)
+# Usage: import fastcgi_settings <site_name>
+(fastcgi_settings) {
+	# Use site-specific PHP-FPM socket based on explicit site name
+	php_fastcgi unix//run/php/php8.3-fpm-{args[0]}.sock
 }
 
 # PHP-FPM monitoring endpoints
 (php_monitoring) {
 	# PHP-FPM status and ping endpoints (restrict access if needed)
 	handle /status {
-		php_fastcgi unix//run/php/php8.3-fpm.sock
+		# is it really nececessary to import fastcgi_settings here?
+		# import fastcgi_settings
 	}
 	handle /ping {
-		php_fastcgi unix//run/php/php8.3-fpm.sock
+		# is it really nececessary to import fastcgi_settings here?
+		# import fastcgi_settings
 	}
 }

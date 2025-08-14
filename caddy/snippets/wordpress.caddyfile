@@ -20,11 +20,6 @@
 
 try_files {path} {path}/ /index.php?{query}
 
-# PHP processing (site-specific for WordPress)
-php_fastcgi unix//run/php/php8.3-fpm.sock {
-    # Pass additional PHP variables if needed
-    env PATH_INFO {path_info}
-    env SCRIPT_NAME {fastcgi_script_name}
-    # Add timing headers for debugging
-    env REQUEST_TIME_FLOAT {time_start_iso}
-}
+# import fastcgi_settings {vars.SITE_NAME}
+
+# Note: PHP processing should be handled by importing fastcgi_settings AFTER this snippet
