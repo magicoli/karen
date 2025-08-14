@@ -1,12 +1,7 @@
 #!/bin/bash
 
-PHPVER=${PHPVER:-8.3}
-
 set -e
-
-PGM=$(basename $0)
-BINDIR=$(dirname $(realpath $0))
-MASTER=$(dirname $(dirname $BINDIR))
+. $(dirname $(realpath $0))/karen-helper
 
 env=${1:-}
 mode=${2:-reload}
@@ -14,13 +9,17 @@ service=php$PHPVER-fpm.service
 
 env_status() {
     if [[ -f /etc/php/$PHPVER/apache2/conf.d/mod_php-development.ini ]]; then
-        echo "🛠️  PHP environment: DEVELOPMENT"
+        log -n "🛠️  PHP environment: "
+        echo development
     elif [[ -f /etc/php/$PHPVER/apache2/conf.d/mod_php-production.ini ]]; then
-        echo "🚀 PHP  environment: PRODUCTION"
+        log -n "🚀 PHP  environment: "
+        echo production
     else
-        echo "❌ Unknown PHP environment"
+        log 1 "❌ Unknown PHP environment"
     fi
     [ "$env" = "status" ] && exit 0
+
+    return 0
 }
 
 case "$env" in
@@ -39,29 +38,27 @@ case "$env" in
     *)
         env_status
 
-        echo
-        echo "Usage: $PGM {dev|prod}" | grep --color "$PGM.*"
-        echo ""
-        echo "Options:"
-        echo "  dev/development  - Switch to development environment"
-        echo "  prod/production  - Switch to production environment" 
-        echo "  status          - Show current environment"
-        exit
+        end 1 "Usage: $PGM {dev|prod}" | grep --color "$PGM.*
+        
+Options:
+    dev/development  - Switch to development environment
+    prod/production  - Switch to production environment
+    status          - Show current environment"
 esac
 
-echo "Switching PHP to $enable environment..."
+log "Switching PHP to $enable environment..."
 
-# # Refresh mod_php config
+log Refresh /etc/php/$PHPVER/apache2/conf.d/
 sudo rm -f /etc/php/$PHPVER/apache2/conf.d/mod_php-$disable.ini
-sudo ln -sf $MASTER/php/$PHPVER/apache2/conf.d/mod_php-common.ini /etc/php/$PHPVER/apache2/conf.d/
-sudo ln -sf $MASTER/php/$PHPVER/apache2/conf.d/mod_php-$enable.ini /etc/php/$PHPVER/apache2/conf.d/
+sudo ln -sf $KAREN_PRESETS/php/$PHPVER/apache2/conf.d/mod_php-common.ini /etc/php/$PHPVER/apache2/conf.d/
+sudo ln -sf $KAREN_PRESETS/php/$PHPVER/apache2/conf.d/mod_php-$enable.ini /etc/php/$PHPVER/apache2/conf.d/
 
-# Refresh php-fpm config
-ls $MASTER/php/$PHPVER/fpm/conf.d/*.ini \
-&& sudo ln -sf $MASTER/php/$PHPVER/fpm/conf.d/*.ini /etc/php/$PHPVER/fpm/conf.d/ \
+log Refresh php-fpm configs /etc/php/$PHPVER/fpm/conf.d/
+ls $KAREN_PRESETS/php/$PHPVER/fpm/conf.d/*.ini \
+&& sudo ln -sf $KAREN_PRESETS/php/$PHPVER/fpm/conf.d/*.ini /etc/php/$PHPVER/fpm/conf.d/ \
 || exit $?
 
-$BINDIR/generate-caddy-pools $env || exit $?
+$KAREN_BIN/generate-caddy-pools $env || end $? Could not execute generate-caddy-pools
 
 # OK BUT NOT YET
 # Setup systemd drop-in for pool generation
@@ -71,12 +68,8 @@ $BINDIR/generate-caddy-pools $env || exit $?
 #     sudo systemctl daemon-reload
 # fi
 
-sudo systemctl $mode $service --no-pager && err=0 || err=$?
-if [ $err -ne 0 ]; then
-    systemctl status $service --no-pager
-    exit $?
-fi
+sudo systemctl $mode $service --no-pager || end $? "$(systemctl status $service --no-pager 2>&1)"
 
-echo $service ${mode}ed
+log $service ${mode}ed
 
 env_status

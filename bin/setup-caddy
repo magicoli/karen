@@ -2,9 +2,7 @@
 
 set -e
 
-PGM=$(basename $0)
-BINDIR=$(dirname $(realpath $0))
-MASTER=$(dirname $(dirname $BINDIR))
+. $(dirname $(realpath $0))/karen-helper
 
 env=${1:-}
 mode=${2:-reload}

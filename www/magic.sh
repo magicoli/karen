@@ -1,7 +1,7 @@
 # This is Magic's way
 if [ ! "$PROFILE_MAGIC" ]
 then
-  PROFILE_MAGIC=/opt/magic/etc/profile.d/1-magic.sh
+  PROFILE_MAGIC=$KAREN_ETC/profile.d/1-magic.sh
   # echo BEEN THERE $PROFILE_MAGIC
   if [ "`id -u`" -eq 0 ]; then
     PS1='# '
@@ -12,7 +12,7 @@ then
 
   umask 0002
 
-  addPathBefore ~/bin /opt/wrap/bin /opt/magic/bin ~/.local/bin
+  addPathBefore ~/bin /opt/wrap/bin $KAREN_BIN ~/.local/bin
 
   #[ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
 

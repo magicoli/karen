@@ -1,7 +1,7 @@
 # Magic's helpers for bash profiles
 if [ ! "$PROFILE_HELPERS" ]
 then
-  PROFILE_HELPERS=/opt/magic/etc/profile.d/0-helpers.sh
+  PROFILE_HELPERS=$KAREN_ETC/profile.d/0-helpers.sh
   # echo BEEN THERE $PROFILE_HELPERS
   addPath() {
     for path in $@
