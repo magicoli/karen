@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<clientConfig version="1.1">
+	<emailProvider id="magiiic.com">
+		<domain>magiiic.com</domain>
+		<displayName>Magiiic Mail</displayName>
+		<displayShortName>Magiiic</displayShortName>
+		<!-- <incomingServer type="imap">
+			<hostname>mail.magiiic.com</hostname>
+			<port>993</port>
+			<socketType>SSL</socketType>
+			<authentication>password-encrypted</authentication>
+			<username>%EMAILADDRESS%</username>
+		</incomingServer> -->
+		<incomingServer type="imap">
+			<hostname>mail.magiiic.com</hostname>
+			<port>143</port>
+			<socketType>STARTTLS</socketType>
+			<authentication>password-encrypted</authentication>
+			<username>%EMAILADDRESS%</username>
+		</incomingServer>
+		<incomingServer type="imap">
+			<hostname>mail.magiiic.com</hostname>
+			<port>143</port>
+			<socketType>plain</socketType>
+			<authentication>password-encrypted</authentication>
+			<username>%EMAILADDRESS%</username>
+		</incomingServer>
+		<!-- <incomingServer type="pop3">
+			<hostname>mail.magiiic.com</hostname>
+			<port>995</port>
+			<socketType>SSL</socketType>
+			<authentication>password-cleartext</authentication>
+			<username>%EMAILADDRESS%</username>
+		</incomingServer> -->
+		<incomingServer type="pop3">
+			<hostname>mail.magiiic.com</hostname>
+			<port>110</port>
+			<socketType>STARTTLS</socketType>
+			<authentication>password-cleartext</authentication>
+			<username>%EMAILADDRESS%</username>
+		</incomingServer>
+		<incomingServer type="pop3">
+			<hostname>mail.magiiic.com</hostname>
+			<port>110</port>
+			<socketType>plain</socketType>
+			<authentication>password-cleartext</authentication>
+			<username>%EMAILADDRESS%</username>
+		</incomingServer>
+		<!-- <outgoingServer type="smtp">
+			<hostname>smtp.magiiic.com</hostname>
+			<port>465</port>
+			<socketType>SSL</socketType>
+			<authentication>password-encrypted</authentication>
+			<username>%EMAILADDRESS%</username>
+		</outgoingServer> -->
+		<outgoingServer type="smtp">
+			<hostname>mail.magiiic.com</hostname>
+			<port>587</port>
+			<socketType>STARTTLS</socketType>
+			<authentication>password-encrypted</authentication>
+			<username>%EMAILADDRESS%</username>
+		</outgoingServer>
+		<outgoingServer type="smtp">
+			<hostname>mail.magiiic.com</hostname>
+			<port>587</port>
+			<socketType>plain</socketType>
+			<authentication>password-encrypted</authentication>
+			<username>%EMAILADDRESS%</username>
+		</outgoingServer>
+
+		<enable visiturl="http://mail.magiiic.com/">
+			<instruction lang="en">Check also your webmail page for everywhere access</instruction>
+			<instruction lang="fr">Essayez également la page webmail pour un accès universel</instruction>
+		</enable>
+
+		<!-- instruction is purely informational and not used by the client	-->
+		<instruction url="http://www.magiiic.com/support">
+			<descr lang="en">Help and support</descr>
+			<descr lang="fr">Pages d'aide</descr>
+		</instruction>
+
+		<documentation url="http://www.magiiic.com/support/">
+			<descr lang="en">Help and support</descr>
+			<descr lang="fr">Pages d'aide</descr>
+		</documentation>
+		<documentation url="http://www.magiiic.com/support/mail/">
+			<descr lang="en">Mail settings</descr>
+			<descr lang="fr">Réglages mail</descr>
+		</documentation>
+	</emailProvider>
+</clientConfig>

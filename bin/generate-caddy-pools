@@ -1,0 +1,115 @@
+#!/bin/bash
+
+# generate-caddy-pools - Generate PHP-FPM pools for enabled Caddy sites
+# This script creates individual PHP-FPM pools for each enabled Caddy site
+
+PHPVER=8.3
+
+set -euo pipefail
+
+PGM=$(basename $0)
+
+TMPDIR=$(mktemp -d "/tmp/$PGM.$$.XXXXX")
+trap "rm -rf $TMPDIR" EXIT
+
+ENABLED_SITES_DIR="/etc/caddy/sites-enabled"
+POOL_DIR="/etc/php/$PHPVER/fpm/pool.d"
+BUILD_DIR="/opt/magic/etc/build/php/$PHPVER/fpm"
+# POOL_PREFIX="caddy-"
+POOL_PREFIX=""
+
+log() {
+    echo "$PGM: $@" | egrep --color "^|ERROR|WARNING" >&2
+}
+
+env=${1:-}
+
+# Validate mode parameter
+case "$env" in
+    dev|development)
+        enable=development
+        # disable=production
+        ;;
+    prod|production)
+        enable=production
+        # disable=development
+        ;;
+    *)
+        echo "Usage: $PGM {dev|prod}
+
+Options:
+    dev/development  - Switch to development environment
+    prod/production  - Switch to production environment
+    status          - Show current environment" | egrep --color "^|$PGM.*" >&2
+        exit 1
+esac
+
+template="/opt/magic/etc/php/$PHPVER/fpm/pool.d/template-caddy-$enable.conf"
+
+log "Generating PHP-FPM pools for Caddy sites..."
+
+# We do not remove old ones from /opt/magic/etc, the directory contains configs for all servers
+
+# Check if sites directory exists
+if [ ! -d "$ENABLED_SITES_DIR" ]; then
+    log "Warning: Caddy sites directory not found: $ENABLED_SITES_DIR"
+    exit 1
+fi
+
+mkdir -p $BUILD_DIR
+
+# Generate pools for each enabled site
+for site_file in "$ENABLED_SITES_DIR"/*.caddyfile; do
+    [ -f "$site_file" ] || continue
+    
+    # Extract site name from filename (remove .caddyfile extension)
+    site_name=$(basename "$site_file" .caddyfile)
+    
+    # Extract variables from Caddy vars block
+    site_name_from_vars=$(awk '/vars \{/,/\}/ {if($1=="SITE_NAME") print $2}' "$site_file" | tr -d '"')
+    site_user_from_vars=$(awk '/vars \{/,/\}/ {if($1=="SITE_USER") print $2}' "$site_file" | tr -d '"')
+    site_root_from_vars=$(awk '/vars \{/,/\}/ {if($1=="SITE_ROOT") print $2}' "$site_file" | tr -d '"')
+    
+    # Validate that vars block exists and contains required variables
+    if [[ -z "$site_name_from_vars" || -z "$site_user_from_vars" || -z "$site_root_from_vars" ]]; then
+        log "ERROR: Missing or incomplete vars block in $site_file
+    Required variables: SITE_NAME, SITE_USER, SITE_ROOT
+    Found: SITE_NAME='$site_name_from_vars' SITE_USER='$site_user_from_vars' SITE_ROOT='$site_root_from_vars'
+    Aborting"
+        exit 1
+        # log "       Skipping site: $site_name"
+        # continue
+    fi
+    
+    # Use extracted variables
+    site_name="$site_name_from_vars"
+    site_user="$site_user_from_vars"
+    site_root="$site_root_from_vars"
+    
+    pool_name="${site_name}"
+    pool_file="${TMPDIR}/${pool_name}.conf"
+    
+    log "Creating pool: $pool_name (user: $site_user, root: $site_root)"
+    
+    # Create site-specific temporary directories
+    site_tmp_dir="/home/$site_user/domains/$site_name/tmp"
+    sudo mkdir -p "$site_tmp_dir/sessions" "$site_tmp_dir/upload"
+    sudo chown -R www-data:www-data "$site_tmp_dir"
+    sudo chmod -R 775 "$site_tmp_dir"
+    
+    # Generate pool configuration
+    cat $template | sed "s/\${SITE_NAME}/${site_name}/g; s/\${SITE_USER}/$site_user/g; s:\${SITE_ROOT}:$site_root:g; s/\${PHPVER}/$PHPVER/g" > "$pool_file"
+    
+    log "Generated pool configuration: $pool_file"
+done
+
+# Optional (keep them all)
+log "Saving generated files in build directory"
+rsync -Wavz $TMPDIR/ $BUILD_DIR/ >&2
+
+log "Updating pool directory"
+sudo rsync --delete -Wavz $TMPDIR/ $POOL_DIR/ >&2
+
+ls -1 $POOL_DIR/*
+
+log "Pool generation complete. Pools created for $(ls -1 ${TMPDIR}/*.conf 2>/dev/null | wc -l) sites."
