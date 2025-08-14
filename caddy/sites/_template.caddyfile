@@ -1,0 +1,27 @@
+example.org, www.example.org, dev.example.org {
+	# Site variables (Caddy native variables)
+	vars {
+		SITE_NAME "example.org"
+		SITE_USER "example_user"
+		SITE_ROOT "/home/example_user/domains/example.org/www"
+	}
+
+	# Site-specific settings
+	root * {vars.SITE_ROOT}
+	encode gzip
+
+	# PHP processing with fixed per-site pool generation
+	import fastcgi_settings {vars.SITE_NAME}
+
+	# WordPress-specific configuration (must be after import fastcgi_settings)
+	# import /etc/caddy/snippets/wordpress.caddyfile
+
+	# Network configuration (TLS and network-specific settings)
+	import network_settings
+
+	# Use global snippets  
+	import log_settings example.org
+	import php_monitoring # Use global snippets for static files and security
+	import static_files
+	import security_headers
+}
