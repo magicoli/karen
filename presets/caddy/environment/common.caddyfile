@@ -1,0 +1,90 @@
+# Common Caddy Configuration - Shared Snippets
+# This file contains reusable snippets used across all environments
+
+(network_settings) {
+	# Directives for this snippet
+	# foo bar
+	# bar foo
+
+	# Import local directives for this snippet if any (specific to the server setup)
+	import local/network_settings*.caddyfile
+
+	# Additional directives that should be applied after the local imports
+	# foo2 bar2
+}
+
+# Security headers
+(security_headers) {
+	header {
+		# Remove server info
+		-Server
+		# Add security headers
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		X-XSS-Protection "1; mode=block"
+		# Add performance timing header
+		X-Response-Time {time_start_iso}
+	}
+}
+
+# Static file handling with caching
+(static_files) {
+	# Serve static files with caching
+	@static {
+		file
+		path *.css *.js *.ico *.woff* *.ttf *.svg *.jpg *.jpeg *.png *.gif *.webp *.pdf
+	}
+	handle @static {
+		header Cache-Control "public, max-age=31536000"
+		file_server
+	}
+
+	# Serve other files
+	file_server
+}
+
+# Log settings. Can be overridden with local/log_settings*.caddyfile
+(log_settings) {
+	log {
+		output file /var/log/caddy/{args[0]}.access.log
+		# level INFO
+	}
+
+	import local/log_settings*.caddyfile
+
+	# log {
+	# 	output file /var/log/caddy/{args[0]}.access.log {
+	# 		roll_size 100MiB
+	# 		roll_keep 5
+	# 	}
+	# 	format console
+	# }
+
+	# log error {
+	# 	output file /var/log/caddy/{args[0]}.error.log {
+	# 		roll_size 100MiB
+	# 		roll_keep 5
+	# 	}
+	# 	level DEBUG
+	# }
+}
+
+# PHP-FPM configuration for Caddy (uses site-specific pools)
+# Usage: import fastcgi_settings <site_name>
+(fastcgi_settings) {
+	# Use site-specific PHP-FPM socket based on explicit site name
+	php_fastcgi unix//run/php/php8.3-fpm-{args[0]}.sock
+}
+
+# PHP-FPM monitoring endpoints
+(php_monitoring) {
+	# PHP-FPM status and ping endpoints (restrict access if needed)
+	handle /status {
+		# is it really nececessary to import fastcgi_settings here?
+		# import fastcgi_settings
+	}
+	handle /ping {
+		# is it really nececessary to import fastcgi_settings here?
+		# import fastcgi_settings
+	}
+}

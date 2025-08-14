@@ -1,0 +1,5 @@
+# Conflicts: production
+# Description: Development environment pseudo-module
+
+# This is a pseudo-module that enables development environment
+# The actual configuration is in development.conf

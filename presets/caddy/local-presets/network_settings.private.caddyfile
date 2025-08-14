@@ -1,0 +1,8 @@
+# local/network_settings.private.caddyfile
+
+# Private Network Configuration
+# Any directives specific to a private network can be added here
+
+# Network direcives specific to another usecase would be added in local/network_settings.another-usecase.caddyfile
+
+tls internal

@@ -1,0 +1,4 @@
+[MAGIIIC]
+title=Magiiic network
+description=Magiiic internal apps
+ports=3306,8000,8001,8002:9000,9001/tcp

@@ -1,0 +1,52 @@
+[mysqld]
+innodb_large_prefix=true
+innodb_file_format=barracuda
+innodb_file_per_table=true
+innodb_flush_method=O_DIRECT
+
+# Performance optimizations for WordPress (7.6GB RAM server)
+# Use ~60% of RAM for InnoDB buffer pool
+innodb_buffer_pool_size=4G
+innodb_buffer_pool_instances=4
+
+# Query cache (deprecated in MySQL 8.0+ but still useful in MariaDB)
+query_cache_type=1
+query_cache_size=256M
+query_cache_limit=4M
+
+# Temporary table sizes
+tmp_table_size=256M
+max_heap_table_size=256M
+
+# InnoDB log settings
+innodb_log_file_size=256M
+innodb_log_buffer_size=64M
+innodb_flush_log_at_trx_commit=2
+innodb_thread_concurrency=0
+
+# Additional performance settings
+innodb_read_io_threads=8
+innodb_write_io_threads=8
+innodb_io_capacity=2000
+innodb_io_capacity_max=4000
+
+# Connection settings
+max_connections=100
+thread_cache_size=50
+table_open_cache=4000
+table_definition_cache=2000
+
+# MyISAM settings (still used by some WordPress tables)
+key_buffer_size=128M
+myisam_sort_buffer_size=64M
+
+# Query optimizations
+join_buffer_size=4M
+sort_buffer_size=2M
+read_buffer_size=1M
+read_rnd_buffer_size=2M
+
+# Slow query log
+slow_query_log=1
+slow_query_log_file=/var/log/mysql/mysql-slow.log
+long_query_time=2

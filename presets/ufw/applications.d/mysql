@@ -1,0 +1,4 @@
+[MYSQL]
+title=MySQL Server
+description=MySQL server
+ports=3306/tcp

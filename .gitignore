@@ -1,0 +1,24 @@
+# Temporary files
+\#*#
+*~
+\#*\#
+._*
+.apdisk
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# Generated and local configuration directories
+/build/**
+!/build/README.md
+/etc/**
+!/etc/README.md
+
+# Log files
+*.log
+
+
+# Local environment files
+.env
+.env.local

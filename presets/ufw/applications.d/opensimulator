@@ -1,0 +1,4 @@
+[OpenSim]
+title=OpenSimulator
+description=OpenSimulator Robust and Sim ports
+ports=8000,8001,9000:9900/tcp|8000,8001,9000:9900/udp
