@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MAGIC Infrastructure Optimization Deployment Script
-# This script creates symbolic links from /opt/magic/etc to /etc for centralized management
+# This script creates symbolic links from $KAREN_BASE to /etc for centralized management
 
 set -e
 
@@ -54,38 +54,38 @@ restart_service() {
 # MySQL Configuration
 echo -e "\n${YELLOW}📊 MySQL Configuration${NC}"
 create_symlink \
-    "/opt/magic/etc/mysql/conf/magiiic-innodb.cnf" \
+    "$KAREN_BASE/mysql/conf/magiiic-innodb.cnf" \
     "/etc/mysql/conf/magiiic-innodb.cnf" \
     "MySQL InnoDB optimizations"
 
 # PHP Configuration (both Apache and FPM)
 echo -e "\n${YELLOW}🐘 PHP Configuration${NC}"
 create_symlink \
-    "/opt/magic/etc/php/8.3/apache2/conf/magiiic-php-boost.ini" \
+    "$KAREN_BASE/php/8.3/apache2/conf/magiiic-php-boost.ini" \
     "/etc/php/8.3/apache2/conf/magiiic-php-boost.ini" \
     "PHP Apache optimizations"
 
 create_symlink \
-    "/opt/magic/etc/php/8.3/fpm/conf.d/magiiic-php-boost.ini" \
+    "$KAREN_BASE/php/8.3/fpm/conf.d/magiiic-php-boost.ini" \
     "/etc/php/8.3/fpm/conf.d/magiiic-php-boost.ini" \
     "PHP FPM optimizations"
 
 create_symlink \
-    "/opt/magic/etc/php/8.3/fpm/pool.d/www.conf" \
+    "$KAREN_BASE/php/8.3/fpm/pool.d/www.conf" \
     "/etc/php/8.3/fpm/pool.d/www.conf" \
     "PHP FPM pool configuration"
 
 # Caddy Configuration
 echo -e "\n${YELLOW}🌐 Caddy Configuration${NC}"
 create_symlink \
-    "/opt/magic/etc/caddy/Caddyfile" \
+    "$KAREN_BASE/caddy/Caddyfile" \
     "/etc/caddy/Caddyfile" \
     "Main Caddy configuration"
 
 # Create sites-enabled directory and link
 mkdir -p /etc/caddy/sites-enabled
 create_symlink \
-    "/opt/magic/etc/caddy/sites/gites-mosaiques.com.caddyfile" \
+    "$KAREN_BASE/caddy/sites/gites-mosaiques.com.caddyfile" \
     "/etc/caddy/sites-enabled/gites-mosaiques.com.caddyfile" \
     "Caddy site configuration"
 

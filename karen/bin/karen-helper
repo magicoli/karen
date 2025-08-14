@@ -1,0 +1,38 @@
+#!/bin/bash
+
+log() {
+    [ -z "$1" ] && return
+    err=$(echo "$1" | grep -E "^[0-9]+$" || true)
+    [ "$err" ] && shift
+    [ "$1" = "-n" ] && n="-n" && shift || n=
+    message="$@ ($err)"
+    [ -n "$err" -o "$DEBUG" = "true" -o "$DEBUG" = "yes" ] || return 0
+
+    echo $n "$PGM: $@" >&2
+}
+
+end() {
+    log "$@"
+
+    err=$(echo "$1" | grep -E "^[0-9]$" || true)
+    exit $err
+}
+
+DEBUG=${DEBUG:-}
+PGM=${PGM:-$(basename "$0")}
+BINDIR=${BINDIR:-$(dirname "$(realpath "$0")")}
+BASEDIR=$(dirname "$BINDIR")
+[ -e "$BASEDIR/karen" ] || end 1 "Not a Karen installation, BINDIR not properly set ($BINDIR)"
+
+[ -e "$BASEDIR/.env" ] && source "$BASEDIR/.env"
+
+# Check required environment variables
+if [[ -z "$KAREN_ETC" || -z "$KAREN_ETC" || -z "$PHPVER" ]]; then
+    echo "Error: Karen environment not properly set. Run 'karen init' first."
+    exit 1
+fi
+
+PGM=${PGM:-myazpp}
+
+# log KAREN_BASE=$KAREN_BASE
+# log KAREN_BIN=$KAREN_BIN

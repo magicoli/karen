@@ -1,0 +1,61 @@
+#!/bin/bash
+
+PHPVER=${PHPVER:-8.3}
+
+# Default to reload, but allow override via environment variable
+
+set -e
+
+. $(dirname $(realpath $0))/karen-helper
+
+# Here we should make sure another concurrent server is not be running before proceeding
+
+env=${1:-}
+mode=${2:-reload}
+service=apache2.service
+
+# Validate mode parameter
+case "$mode" in
+    reload|restart|status) ;;
+    *)
+        echo "Error: Invalid mode '$mode'. Valid modes: reload, restart, status"
+        exit 1
+        ;;
+esac
+
+sudo a2dismod production || true # If it doesn't exist, maybe it's not yet installed
+
+# Refresh /etc/apache2/mods-available/
+sudo ln -sf $KAREN_PRESETS/apache2/mods/*load $KAREN_PRESETS/apache2/mods/*conf /etc/apache2/mods-available/
+
+# Refresh /etc/apache2/conf-available/
+sudo ln -sf $KAREN_PRESETS/apache2/conf/*.conf /etc/apache2/conf-available/
+
+# Refresh /etc/apache2/snippets (create if not present)
+if [ ! -d "/etc/apache2/snippets" ]; then
+    log "Creating /etc/apache2/snippets"
+    sudo mkdir -p /etc/apache2/snippets
+fi
+
+if [ "$KAREN_PRESETS/apache2/snippets" != "$(realpath /etc/apache2/snippets)" ]; then
+    sudo ln -sf $KAREN_PRESETS/apache2/snippets/*.conf $KAREN_PRESETS/apache2/snippets/*.ini /etc/apache2/snippets/
+fi
+
+# We will use setup-php instead, when it's ready
+sudo rm -f /etc/php/$PHPVER/apache2/conf.d/mod_php-production.ini
+sudo ln -sf $KAREN_PRESETS/php/$PHPVER/apache2/conf.d/mod_php-common.ini /etc/php/$PHPVER/apache2/conf.d/
+sudo ln -sf $KAREN_PRESETS/php/$PHPVER/apache2/conf.d/mod_php-development.ini /etc/php/$PHPVER/apache2/conf.d/
+
+# Refresh php-fpm config
+sudo ln -sf $KAREN_PRESETS/php/$PHPVER/fpm/conf.d/*.ini /etc/php/$PHPVER/fpm/conf.d/
+sudo ln -sf $KAREN_PRESETS/php/$PHPVER/fpm/pool.d/*.ini /etc/php/$PHPVER/fpm/pool.d/
+
+sudo a2enmod development
+sudo a2enmod status
+
+sudo systemctl $mode $service
+echo $service ${mode}ed
+echo
+
+sudo systemctl status apache2.service --no-pager
+echo

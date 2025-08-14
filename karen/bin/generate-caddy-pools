@@ -3,24 +3,17 @@
 # generate-caddy-pools - Generate PHP-FPM pools for enabled Caddy sites
 # This script creates individual PHP-FPM pools for each enabled Caddy site
 
-PHPVER=8.3
-
 set -euo pipefail
-
-PGM=$(basename $0)
+. $(dirname $(realpath $0))/karen-helper
 
 TMPDIR=$(mktemp -d "/tmp/$PGM.$$.XXXXX")
 trap "rm -rf $TMPDIR" EXIT
 
 ENABLED_SITES_DIR="/etc/caddy/sites-enabled"
 POOL_DIR="/etc/php/$PHPVER/fpm/pool.d"
-BUILD_DIR="/opt/magic/etc/build/php/$PHPVER/fpm"
+BUILD_DIR="$KAREN_BASE/build/php/$PHPVER/fpm"
 # POOL_PREFIX="caddy-"
 POOL_PREFIX=""
-
-log() {
-    echo "$PGM: $@" | egrep --color "^|ERROR|WARNING" >&2
-}
 
 env=${1:-}
 
@@ -44,11 +37,11 @@ Options:
         exit 1
 esac
 
-template="/opt/magic/etc/php/$PHPVER/fpm/pool.d/template-caddy-$enable.conf"
+template="$KAREN_TEMPLATES/php/$PHPVER/fpm/pool.d/caddy-$enable.conf"
 
 log "Generating PHP-FPM pools for Caddy sites..."
 
-# We do not remove old ones from /opt/magic/etc, the directory contains configs for all servers
+# We do not remove old ones from $KAREN_ETC, the directory contains configs for all servers
 
 # Check if sites directory exists
 if [ ! -d "$ENABLED_SITES_DIR" ]; then
