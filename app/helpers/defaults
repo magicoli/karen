@@ -1,0 +1,14 @@
+# Karen app defaults
+
+# If we add other versions support, we will add verifications
+PHPVER=8.3
+
+[ -z "$initial_base" ] && echo "$BASH_SOURCE[0] must only be sourced by karen helpers" && exit 1
+
+# Base directories - auto-detected from Karen installation
+export KAREN_BASE="${initial_base:-$(dirname $(0))}"
+export KAREN_BIN="$KAREN_BASE/bin"
+export KAREN_DIR="$KAREN_BASE"
+export KAREN_ETC="$KAREN_BASE/etc"
+export KAREN_PRESETS="$KAREN_BASE/presets"
+export KAREN_TEMPLATES="$KAREN_BASE/templates"

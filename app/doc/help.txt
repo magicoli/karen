@@ -1,0 +1,54 @@
+Karen - Detailed Help
+
+OVERVIEW:
+Karen manages server configurations through presets and templates.
+  • Presets: Ready-to-use configs (can be linked directly to /etc/)
+  • Templates: Files requiring customization before deployment
+
+INITIALIZATION:
+  karen init        Create .env file with Karen environment variables
+  karen update      Add missing variables to existing .env file
+
+SETUP COMMANDS:
+  karen setup-php [VERSION]
+    Configure PHP-FPM pools for specified version (default: 8.3)
+    Creates pools for each site based on existing configurations
+
+  karen setup-caddy
+    Generate Caddy pool configurations from site templates
+    Updates Caddy configuration with proper upstream definitions
+
+  karen setup-apache
+    Apply Apache optimization configurations
+    Deploys performance tuning and security settings
+
+ENVIRONMENT:
+Karen uses these environment variables (set via 'karen init'):
+  KAREN_BASE        Karen installation directory
+  KAREN_PRESETS     Ready-to-use configuration files
+  KAREN_TEMPLATES   Files requiring customization
+  KAREN_ETC         Custom /etc/ overlay directory
+  KAREN_BIN         Karen utility scripts
+  PHPVER           Default PHP version (e.g., "8.3")
+
+DIRECTORY STRUCTURE:
+  karen/
+  ├── presets/      Ready-to-link configurations
+  │   ├── apache2/  Apache virtual hosts and configs
+  │   ├── php/      PHP-FPM pool configurations
+  │   ├── mysql/    Database configurations
+  │   └── caddy/    Caddy server configurations
+  ├── templates/    Files needing customization
+  │   ├── apache2/  Apache template files
+  │   ├── php/      PHP template files
+  │   └── karen/    Karen environment templates
+  ├── etc/          Custom system configurations
+  └── bin/          Karen utility scripts
+
+EXAMPLES:
+  karen init             # Initialize Karen environment
+  karen setup-php 8.3    # Setup PHP 8.3 pools
+  karen setup-caddy      # Generate Caddy configs
+  karen help             # Show this detailed help
+
+For more information: https://github.com/magicoli/karen

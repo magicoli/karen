@@ -1,0 +1,12 @@
+COMMANDS:
+  init              Initialize Karen environment (.env file)
+  update            Update environment with missing variables
+  help              Show detailed help
+  
+  setup-php         Configure PHP-FPM pools
+  setup-caddy       Generate Caddy pool configurations
+  setup-apache      Configure Apache optimizations
+
+OPTIONS:
+  -h, --help        Show detailed help
+  -v, --version     Show version information"

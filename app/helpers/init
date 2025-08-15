@@ -1,0 +1,33 @@
+#!/bin/bash
+
+PGM_VERSION=1.0.0
+
+set -e
+
+PGM=${PGM:-$(basename "$0")}
+TMP=/tmp/$PGM.$$
+DEBUG=${DEBUG:-}
+KAREN_DEBUG=${KAREN_DEBUG:-}
+
+ENV_PATTERN="^(KAREN_|PHPVER=)"
+ENV_FILE=$KAREN_BASE/.env
+
+initial_helpers=$(dirname $BASH_SOURCE)
+initial_base=$(dirname $(dirname $initial_helpers))
+[ ! -e "$initial_base/karen" ] && echo "$PGM: This doesn't look like a karen $initial_base" && exit 1
+
+# Loading utils (base functions like log, end, yesno...)
+. $initial_helpers/utils
+
+# Loading default parameters
+. $initial_helpers/defaults
+
+ENV_PATTERN="^(KAREN_|PHPVER=)"
+ENV_FILE=$KAREN_BASE/.env
+
+if [ -e "$initial_base/.env" ]; then
+    . $initial_base/.env
+else
+    . $KAREN_BASE/install/install.sh
+fi
+

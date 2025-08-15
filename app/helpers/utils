@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Utility functions for true/false checking
+is_true() {
+    lower=$(echo "${1:-}" | tr "[:upper:]" "[:lower:]")
+    case "$lower" in
+        yes|y|on|true|1) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+is_false() {
+    lower=$(echo "${1:-}" | tr "[:upper:]" "[:lower:]")
+    case "$lower" in
+        no|n|off|false|0) return 0 ;;
+        # "") return 0 ;;  # Empty is not false, it's null
+        *) return 1 ;;   # Unknown is false
+    esac
+}
+
+# Debug checking function
+karen_debug() {
+    is_true "$KAREN_DEBUG" || is_true "$DEBUG"
+}
+
+log() {
+    [ -z "$1" ] && return
+    err=$(echo "$1" | grep -E "^[0-9]+$" || true)
+    [ "$err" ] && shift
+    [ "$1" = "-n" ] && n="-n" && shift || n=
+    [ -n "$err" ] || karen_debug || return 0
+    echo $n "$PGM: $@" >&2
+}
+
+end() {
+    # err=$(echo "$1" | grep -E "^[1-9][0-9]*$" || true)
+    err=$(echo "$1" | grep -E "^[0-9]+$" || true)
+    [ "$err" ] && shift && [ "$err" != "0" ] && prefix="[ERROR]" || prefix="[END]"
+    [ "$1" = "-n" ] && n="-n" && shift || n=
+
+    log $err "$prefix $@"
+    exit ${err:-0}
+}
+
+yesno() {
+    default=n
+    choice="y/N"
+    [ "$1" = "y" ] && default=y && choice="Y/n" && shift
+    [ "$1" = "-y" ] && default=y && choice="Y/n" && shift
+    [ "$@" ] && message="$@" || message="Answer"
+    message="$message ($choice) "
+    read -u1 -p "$message" answer
+    [ "$answer" = "" ] && answer=$default
+    answer=$(echo "$answer" | tr "[:upper:]" "[:lower:]")
+    [ "$answer" = "y" ] && return 0
+    [ "$answer" = "yes" ] && return 0
+    return 1
+}
+
+get_config() {
+    env | egrep "$ENV_PATTERN"
+}
+
+usage() {
+    echo "Usage: $PGM [COMMAND] [OPTIONS]"
+    echo
+    cat $KAREN_BASE/app/doc/usage.txt
+}
+
+detailed_help() {
+    cat $KAREN_BASE/app/doc/help.txt
+    end
+}
