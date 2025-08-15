@@ -1,0 +1,126 @@
+#!/bin/bash
+# Bash completion for Karen - Server Configuration Management Tool
+# https://github.com/magicoli/karen
+
+_karen() {
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    # Main Karen commands
+    local commands="help php caddy apache"
+    
+    # Options
+    local global_opts="--help --version"
+    
+    # PHP versions (currently supported)
+    local php_versions="8.3"
+    
+    # Environment modes
+    local env_modes="development production"
+
+    case ${COMP_CWORD} in
+        1)
+            # First argument - main commands and options
+            COMPREPLY=( $(compgen -W "${commands} ${global_opts}" -- ${cur}) )
+            return 0
+            ;;
+        2)
+            # Second argument - depends on first
+            case ${prev} in
+                # # No specific choices for php now, until we support more versions
+                # php)
+                #     COMPREPLY=( $(compgen -W "${php_versions} ${env_modes}" -- ${cur}) )
+                #     return 0
+                #     ;;
+                caddy|apache|php)
+                    COMPREPLY=( $(compgen -W "${env_modes} --help" -- ${cur}) )
+                    return 0
+                    ;;
+                help)
+                    COMPREPLY=( $(compgen -W "detailed full" -- ${cur}) )
+                    return 0
+                    ;;
+                *)
+                    return 0
+                    ;;
+            esac
+            ;;
+        3)
+            # Third argument
+            case ${COMP_WORDS[1]} in
+                php)
+                    # If second arg was PHP version, suggest environment modes
+                    if [[ "${prev}" =~ ^[0-9]\.[0-9]$ ]]; then
+                        COMPREPLY=( $(compgen -W "${env_modes}" -- ${cur}) )
+                    fi
+                    return 0
+                    ;;
+                *)
+                    return 0
+                    ;;
+            esac
+            ;;
+    esac
+
+    return 0
+}
+
+# Register the completion function
+complete -F _karen karen
+
+# Also provide completion for direct script calls if they exist in PATH
+if command -v setup-php >/dev/null 2>&1; then
+    _setup_php() {
+        local cur prev
+        COMPREPLY=()
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+        
+        local php_versions="8.3"
+        local env_modes="development production"
+        
+        COMPREPLY=( $(compgen -W "${php_versions} ${env_modes} --help" -- ${cur}) )
+        return 0
+    }
+    complete -F _setup_php setup-php
+fi
+
+if command -v generate-caddy-pools >/dev/null 2>&1; then
+    _generate_caddy_pools() {
+        local cur
+        COMPREPLY=()
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        
+        local env_modes="development production"
+        COMPREPLY=( $(compgen -W "${env_modes} --help" -- ${cur}) )
+        return 0
+    }
+    complete -F _generate_caddy_pools generate-caddy-pools
+fi
+
+# Add completion for common file paths if in Karen directory
+_karen_files() {
+    local cur dir
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    
+    # If we're in a Karen directory, offer relevant paths
+    if [[ -d "presets" && -d "templates" ]]; then
+        case ${COMP_WORDS[1]} in
+            setup-*)
+                # Offer preset directories
+                COMPREPLY=( $(compgen -d "presets/" -- ${cur}) )
+                ;;
+        esac
+    fi
+}
+
+# Enhanced completion that includes file paths
+_karen_enhanced() {
+    _karen
+    [[ ${#COMPREPLY[@]} -eq 0 ]] && _karen_files
+}
+
+# Use enhanced completion
+complete -F _karen_enhanced karen

@@ -14,23 +14,20 @@ KAREN_DIR=$(dirname $(realpath $BASH_SOURCE))
 
 # Main command dispatcher
 case "${1:-}" in
-    init)
-        init_karen
-        ;;
-    help|--help|-h)
+    help|--help)
         usage
         detailed_help
         ;;
-    setup-php)
+    php)
         exec "$KAREN_BIN/setup-php" "${@:2}"
         ;;
-    setup-caddy)
+    caddy)
         exec "$KAREN_BIN/generate-caddy-pools" "${@:2}"
         ;;
-    setup-apache)
+    apache)
         exec "$KAREN_BIN/setup-apache-optimization.sh" "${@:2}"
         ;;
-    -v|--version)
+    --version)
         echo "$PGM $PGM_VERSION"
         echo "https://github.com/magicoli/karen"
         ;;

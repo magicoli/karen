@@ -28,6 +28,6 @@ ENV_FILE=$KAREN_BASE/.env
 if [ -e "$initial_base/.env" ]; then
     . $initial_base/.env
 else
-    . $KAREN_BASE/install/install.sh
+    . $KAREN_BASE/app/helpers/install
 fi
 

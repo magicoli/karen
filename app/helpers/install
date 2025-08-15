@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# install/install.sh
+# app/helpers/install
 # Must be called by helpers when config file is not set.
 
 set -e
