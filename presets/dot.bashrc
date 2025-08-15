@@ -166,15 +166,16 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
-export PATH=$KAREN_BIN:/opt/wrap/bin:/opt/opensim/bin:$PATH
+export PATH=/opt/magic/bin:/opt/wrap/bin:/opt/opensim/bin:$PATH
 
 [ -f /usr/local/etc/bash_completion ] && . /usr/local/etc/bash_completion
 
-. $KAREN_ETC/bash_completion.d/ssh
-. $KAREN_ETC/bash_completion.d/brew
+bash_tools_dir=${bash_tools_dir:-$(dirname $(realpath $BASH_SOURCE))}
+[ -e "$bash_tools_dir/bash_completion.d/ssh" ] && . $bash_tools_dir/bash_completion.d/ssh
+[ -e "$bash_tools_dir/bash_completion.d/brew" ] && . $bash_tools_dir/bash_completion.d/brew
 export EDITOR=emacs
 
-[ -f $KAREN_ETC/git-prompt ] && . $KAREN_ETC/git-prompt
+[ -f $bash_tools_dir/git-prompt ] && . $bash_tools_dir/git-prompt
 [ -f ~/etc/git-prompt ] && . ~/etc/git-prompt
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
