@@ -35,13 +35,12 @@ log() {
 end() {
     # err=$(echo "$1" | grep -E "^[1-9][0-9]*$" || true)
     err=$(echo "$1" | grep -E "^[0-9]+$" || true)
-    [ "$err" ] && shift && [ "$err" != "0" ] && prefix="[ERROR]" || prefix="[END]"
+    [ "$err" ] && shift && [ "$err" != "0" ] && prefix="[ERROR]" || prefix=""
     [ "$1" = "-n" ] && n="-n" && shift || n=
-
-    log $err "$prefix $@"
+    message=${@:-Finished processing}
+    log $err $prefix "$message"
     exit ${err:-0}
 }
-
 yesno() {
     default=n
     choice="y/N"

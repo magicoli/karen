@@ -9,10 +9,30 @@ get_config > $TMP.env
 cat $TMP.env | wc -l | grep -q "^0" && end 1 "I can't find any defaults, what did you do wrong?"
 
 # Show environment if requested
-log 1 "I am entitled to a config file. I will save these values in $ENV_FILE"
+echo "I demand a config file."
 
-sed "s/^/\t/" $TMP.env | sort -n
+echo
+echo "Custom settings:"
+# Ask for KAREN_ETC location
+while read var desc; do
+    printf "\t"
+    read -u1 -e -p "$var ($desc): " -i "${!var}" $var
+    export $var
+done << EOF
+KAREN_ETC local configuration directory
+EOF
 
-yesno -y "Proceed?" || end $? "Abort"
+echo
+get_config | sort -n | tee $TMP.env # | sed "s/^/\t/"
 
-cat $TMP.env > $ENV_FILE && log 1 "Preferences updated, have fun"
+echo
+yesno -y "Save these settings to $ENV_FILE?" || end 0 "Configuration aborted"
+
+cat $TMP.env > $ENV_FILE || end $? "An error occured while trying to save $ENV_FILE"
+
+# Make sure environment is exported
+export $(env | egrep "$ENV_PATTERN" | cut -d "=" -f 1)
+
+[ -z "$1" ] \
+&& end 0 "Preferences updated, run $PGM --help for available options" \
+|| log 0 "Preferences updated"

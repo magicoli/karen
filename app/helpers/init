@@ -9,25 +9,29 @@ TMP=/tmp/$PGM.$$
 DEBUG=${DEBUG:-}
 KAREN_DEBUG=${KAREN_DEBUG:-}
 
-ENV_PATTERN="^(KAREN_|PHPVER=)"
-ENV_FILE=$KAREN_BASE/.env
+ENV_PATTERN="^KAREN_"
+CONFIG_PATTERN="^KAREN_(ETC)"
 
-initial_helpers=$(dirname $BASH_SOURCE)
-initial_base=$(dirname $(dirname $initial_helpers))
-[ ! -e "$initial_base/karen" ] && echo "$PGM: This doesn't look like a karen $initial_base" && exit 1
+init_helpers=$(dirname $BASH_SOURCE)
+init_base=$(dirname $(dirname $init_helpers))
+[ ! -e "$init_base/karen" ] && echo "$PGM: This doesn't look like a karen $init_base" && exit 1
 
 # Loading utils (base functions like log, end, yesno...)
-. $initial_helpers/utils
+. $init_helpers/utils
 
 # Loading default parameters
-. $initial_helpers/defaults
+. $init_helpers/defaults
 
-ENV_PATTERN="^(KAREN_|PHPVER=)"
+# From now on, legit KAREN_* are available
+
 ENV_FILE=$KAREN_BASE/.env
 
-if [ -e "$initial_base/.env" ]; then
-    . $initial_base/.env
+if [ -e "$KAREN_BASE/.env" ]; then
+    . $KAREN_BASE/.env
 else
-    . $KAREN_BASE/app/helpers/install
+    . $KAREN_HELPERS/install
 fi
 
+# Export Karen environment
+exports=$(compgen -v | egrep "$ENV_PATTERN" | grep -E "^[A-Z0-9]+$")
+[ -n "$exports" ] && export $(compgen -v | egrep "$ENV_PATTERN")
