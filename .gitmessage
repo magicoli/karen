@@ -1,0 +1,33 @@
+# <type>: <subject line - max 50 chars>
+#
+# NEW FEATURES: (list new features first)
+# * new <feature description>
+# * new <feature description>
+#
+# FIXES: (then list bug fixes)
+# * fix <bug description>
+# * fix <bug description>
+#
+# IMPROVEMENTS: (then list improvements to existing features)
+# * improve <improvement description>
+# * update <update description>
+#
+# CHANGES: (finally list other changes)
+# * change <change description>
+# * remove <removal description>
+#
+# Commit Message Rules:
+# 1. Subject line: imperative mood, no period, max 50 chars
+# 2. Always highlight NEW FEATURES first (most important)
+# 3. Then FIXES (second priority)
+# 4. Then IMPROVEMENTS/updates to existing features
+# 5. Finally other CHANGES (lowest priority)
+# 6. Use present tense ("add" not "added")
+# 7. Use bullet points with prefixes: new, add, fix, update, improve, change, remove
+# 8. Be specific about what was accomplished
+#
+# Examples:
+# - "new interactive installation system"
+# - "fix environment variable detection"
+# - "improve error handling in setup scripts"
+# - "update documentation for new API"
