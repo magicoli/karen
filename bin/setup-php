@@ -1,7 +1,8 @@
 #!/bin/bash
 
 set -e
-. $(dirname $(realpath $0))/karen-helper
+
+. $(dirname $(dirname $(realpath $BASH_SOURCE)))/app/helpers/init
 
 env=${1:-}
 mode=${2:-reload}

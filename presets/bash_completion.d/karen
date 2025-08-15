@@ -18,7 +18,7 @@ _karen() {
     local php_versions="8.3"
     
     # Environment modes
-    local env_modes="development production"
+    local env_modes="development production status"
 
     case ${COMP_CWORD} in
         1)
@@ -48,14 +48,14 @@ _karen() {
             esac
             ;;
         3)
-            # Third argument
+            # Third argument - reload/restart for environment commands
             case ${COMP_WORDS[1]} in
-                php)
-                    # If second arg was PHP version, suggest environment modes
-                    if [[ "${prev}" =~ ^[0-9]\.[0-9]$ ]]; then
-                        COMPREPLY=( $(compgen -W "${env_modes}" -- ${cur}) )
+                php|caddy|apache)
+                    # If second arg was an environment mode, suggest reload/restart
+                    if [[ "${COMP_WORDS[2]}" =~ ^(development|production)$ ]]; then
+                        COMPREPLY=( $(compgen -W "reload restart" -- ${cur}) )
+                        return 0
                     fi
-                    return 0
                     ;;
                 *)
                     return 0
