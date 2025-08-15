@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# System messages helper for Karen
+# Usage: system_message <tag>
+# Format: <type>_<context>_<message_tag>
+
+declare -A SYSTEM_MESSAGES=(
+    [error_config_empty]="Configuration is empty or missing. Run 'karen install' to set up."
+    [error_config_invalid]="Invalid configuration detected. Please check your settings."
+    [error_env_missing]="Environment not specified. Available: development, production"
+    [error_env_invalid]="Invalid environment specified. Available: development, production"
+    [error_php_version]="PHP version not supported or not found"
+    [error_service_failed]="Service operation failed. Check system logs for details."
+    [error_command_missing]="Missing command"
+    [error_command_unknown]="Unknown command"
+    [error_karen_directory]="This doesn't look like a karen directory"
+    [error_caddy_sites_missing]="Caddy sites directory not found"
+    [error_caddy_vars_incomplete]="Missing or incomplete vars block in Caddy site file"
+    [error_ssl_domain_invalid]="Invalid domain or URL format"
+    [error_ssl_connection_failed]="SSL connection failed"
+    [error_mode_invalid]="Invalid mode specified"
+    [error_apache_config]="Apache configuration error"
+    [error_caddy_config]="Caddy configuration error"
+    [error_env_pattern_missing]="ENV_PATTERN variable is not set"
+    [error_empty_config]="Empty configuration"
+    [error_config_save_failed]="An error occurred while trying to save configuration file"
+    [info_config_loaded]="Configuration loaded successfully"
+    [info_service_reloaded]="Service reloaded successfully"
+    [info_env_switched]="Environment switched successfully"
+    [warn_config_partial]="Configuration partially loaded - some settings may be missing"
+    [warn_service_restart]="Service restart required for changes to take effect"
+)
+
+system_message() {
+    local tag="$1"
+    
+    if [[ -n "${SYSTEM_MESSAGES[$tag]:-}" ]]; then
+        echo "${SYSTEM_MESSAGES[$tag]}"
+    else
+        echo "$tag"
+    fi
+}

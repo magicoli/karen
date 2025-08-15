@@ -68,8 +68,8 @@ yesno() {
 }
 
 get_config() {
-    [ -z "$ENV_PATTERN" ] && log 1 "$ENV_PATTERN is empty" && return 1
-    set | egrep "$ENV_PATTERN" || log 1 error_empty_config
+    [ -z "$ENV_PATTERN" ] && log 1 "$(system_message error_env_pattern_missing)" && return 1
+    set | egrep "$ENV_PATTERN" || log 1 "$(system_message error_empty_config)"
 }
 
 usage() {

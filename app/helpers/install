@@ -9,7 +9,7 @@ log starting $BASH_SOURCE
 
 get_config > $TMP.env
 
-cat $TMP.env | wc -l | grep -q "^0" && end 1 "I can't find any defaults, what did you do wrong?"
+cat $TMP.env | wc -l | grep -q "^0" && end 1 "$(system_message error_config_empty)"
 
 # Show environment if requested
 echo "I demand a config file."
@@ -30,7 +30,7 @@ get_config | sort -n | tee $TMP.env # | sed "s/^/\t/"
 echo
 yesno -y "Save these settings to $ENV_FILE?" || end 0 "Configuration aborted"
 
-egrep "$CONFIG_PATTERN" $TMP.env > $ENV_FILE || end $? "An error occured while trying to save $ENV_FILE"
+egrep "$CONFIG_PATTERN" $TMP.env > $ENV_FILE || end $? "$(system_message error_config_save_failed): $ENV_FILE"
 
 # Make sure environment is exported
 export $(env | egrep "$ENV_PATTERN" | cut -d "=" -f 1)

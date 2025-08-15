@@ -28,13 +28,14 @@ case "${1:-}" in
         echo "https://github.com/magicoli/karen"
         ;;
     "")
-        log 0 "Missing command
-        
+        system_message error_command_missing
+        log 0 "
 $(usage)"
         end
         ;;
     *)
-        end 1 "Unknown command '$1'
+        system_message error_command_unknown
+        end 1 "'$1'
         
 $(usage)"
         ;;

@@ -1,8 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
-
-. $(dirname $(realpath $0))/karen-helper
+. $(dirname $(dirname $(realpath $BASH_SOURCE)))/app/helpers/init
 
 env=${1:-}
 mode=${2:-reload}
@@ -11,7 +10,8 @@ mode=${2:-reload}
 case "$mode" in
     reload|restart|status) ;;
     *)
-        echo "Error: Invalid mode '$mode'. Valid modes: reload, restart, status"
+        system_message error_mode_invalid
+        echo ": '$mode'. Valid modes: reload, restart, status"
         exit 1
         ;;
 esac
@@ -51,6 +51,7 @@ case "$env" in
     *)
         env_status
         echo
+        system_message error_env_missing
         echo "Usage: $PGM {dev|prod}" | grep --color "$PGM.*"
         echo ""
         echo "Options:"
@@ -103,10 +104,11 @@ fi
 
 sudo systemctl $mode $service --no-pager && err=0 || err=$?
 if [ $err -ne 0 ]; then
+    system_message error_service_failed
     systemctl status $service --no-pager
     exit $?
 fi
 
-echo $service ${mode}ed
+system_message info_service_reloaded
 
 env_status

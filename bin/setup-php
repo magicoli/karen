@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -euo pipefail
-
 . $(dirname $(dirname $(realpath $BASH_SOURCE)))/app/helpers/init
 
 env=${1:-}
@@ -32,14 +31,15 @@ case "$env" in
         enable=production
         disable=development
         ;;
-    status)
+    status)``
         env_status
         exit $?
         ;;
     *)
         env_status
 
-        end 1 "Usage: $PGM {dev|prod}" | grep --color "$PGM.*
+        system_message error_env_missing
+        end 1 "Usage: $PGM {dev|prod}
         
 Options:
     dev/development  - Switch to development environment
@@ -59,7 +59,7 @@ ls $KAREN_PRESETS/php/$PHPVER/fpm/conf.d/*.ini \
 && sudo ln -sf $KAREN_PRESETS/php/$PHPVER/fpm/conf.d/*.ini /etc/php/$PHPVER/fpm/conf.d/ \
 || exit $?
 
-$KAREN_BIN/generate-caddy-pools $env || end $? Could not execute generate-caddy-pools
+$KAREN_BIN/generate-caddy-pools $env || end $? "$(system_message error_service_failed)"
 
 # OK BUT NOT YET
 # Setup systemd drop-in for pool generation
@@ -69,7 +69,7 @@ $KAREN_BIN/generate-caddy-pools $env || end $? Could not execute generate-caddy-
 #     sudo systemctl daemon-reload
 # fi
 
-sudo systemctl $mode $service --no-pager || end $? "$(systemctl status $service --no-pager 2>&1)"
+sudo systemctl $mode $service --no-pager || end $? "$(system_message error_service_failed) - $(systemctl status $service --no-pager 2>&1)"
 
 log $service ${mode}ed
 

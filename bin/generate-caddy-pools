@@ -28,6 +28,7 @@ case "$env" in
         # disable=development
         ;;
     *)
+        system_message error_env_missing
         echo "Usage: $PGM {dev|prod}
 
 Options:
@@ -45,7 +46,8 @@ log "Generating PHP-FPM pools for Caddy sites..."
 
 # Check if sites directory exists
 if [ ! -d "$ENABLED_SITES_DIR" ]; then
-    log "Warning: Caddy sites directory not found: $ENABLED_SITES_DIR"
+    system_message error_caddy_sites_missing
+    log ": $ENABLED_SITES_DIR"
     exit 1
 fi
 
@@ -65,7 +67,8 @@ for site_file in "$ENABLED_SITES_DIR"/*.caddyfile; do
     
     # Validate that vars block exists and contains required variables
     if [[ -z "$site_name_from_vars" || -z "$site_user_from_vars" || -z "$site_root_from_vars" ]]; then
-        log "ERROR: Missing or incomplete vars block in $site_file
+        system_message error_caddy_vars_incomplete
+        log ": $site_file
     Required variables: SITE_NAME, SITE_USER, SITE_ROOT
     Found: SITE_NAME='$site_name_from_vars' SITE_USER='$site_user_from_vars' SITE_ROOT='$site_root_from_vars'
     Aborting"

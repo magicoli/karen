@@ -16,6 +16,9 @@ init_base=$(dirname $(dirname $init_helpers))
 # Loading utils (base functions like log, end, yesno...)
 . $init_helpers/utils
 
+# Loading system messages
+. $init_helpers/messages
+
 # Loading default parameters
 . $init_helpers/defaults
 
@@ -39,6 +42,6 @@ fi
 
 # Export Karen environment
 exports=$(compgen -v | egrep "$ENV_PATTERN" | grep -E "^[A-Z0-9_]+$") || end $? error_empty_config
-log 0 DEBUG Checkpoint $BASH_SOURCE
 [ -n "$exports" ] && export $(compgen -v | egrep "$ENV_PATTERN")
+
 log $BASH_SOURCE processed
