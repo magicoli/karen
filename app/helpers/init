@@ -2,15 +2,12 @@
 
 PGM_VERSION=1.0.0
 
-set -e
+set -euo pipefail
 
 PGM=${PGM:-$(basename "$0")}
 TMP=/tmp/$PGM.$$
 DEBUG=${DEBUG:-}
 KAREN_DEBUG=${KAREN_DEBUG:-}
-
-ENV_PATTERN="^KAREN_"
-CONFIG_PATTERN="^KAREN_(ETC)"
 
 init_helpers=$(dirname $BASH_SOURCE)
 init_base=$(dirname $(dirname $init_helpers))
@@ -22,16 +19,26 @@ init_base=$(dirname $(dirname $init_helpers))
 # Loading default parameters
 . $init_helpers/defaults
 
+# . $init_helpers/gettext || end 1 Could not load gettext
+
 # From now on, legit KAREN_* are available
 
+ENV_PATTERN="^KAREN_"
+CONFIG_PATTERN="^KAREN_(ETC)"
 ENV_FILE=$KAREN_BASE/.env
 
-if [ -e "$KAREN_BASE/.env" ]; then
-    . $KAREN_BASE/.env
+if [ -e "$ENV_FILE" ]; then
+    log Reading config from $ENV_FILE
+    . $ENV_FILE
 else
+    log Launching installation
     . $KAREN_HELPERS/install
 fi
 
+# compgen -v | egrep "$ENV_PATTERN" | grep -E "^[A-Z0-9_]+$" || end $? error_empty_config
+
 # Export Karen environment
-exports=$(compgen -v | egrep "$ENV_PATTERN" | grep -E "^[A-Z0-9]+$")
+exports=$(compgen -v | egrep "$ENV_PATTERN" | grep -E "^[A-Z0-9_]+$") || end $? error_empty_config
+log 0 DEBUG Checkpoint $BASH_SOURCE
 [ -n "$exports" ] && export $(compgen -v | egrep "$ENV_PATTERN")
+log $BASH_SOURCE processed

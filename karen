@@ -7,10 +7,6 @@ KAREN_DIR=$(dirname $(realpath $BASH_SOURCE))
 # Get script directory and load helper functions
 . $(dirname $(realpath $0))/app/helpers/init
 
-# log 1 "Active config:
-# $(get_config | sed "s/^/\t/")"
-
-# end What a wonderful world
 
 # Main command dispatcher
 case "${1:-}" in

@@ -3,7 +3,7 @@
 # SSL Certificate Information Tool
 # Shows certificate details served by web server
 
-set -e
+set -euo pipefail
 
 PGM=$(basename $0)
 

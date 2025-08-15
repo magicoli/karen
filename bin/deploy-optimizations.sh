@@ -3,7 +3,7 @@
 # MAGIC Infrastructure Optimization Deployment Script
 # This script creates symbolic links from $KAREN_BASE to /etc for centralized management
 
-set -e
+set -euo pipefail
 
 echo "🚀 Deploying MAGIC Infrastructure Optimizations..."
 

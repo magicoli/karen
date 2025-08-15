@@ -33,14 +33,25 @@ log() {
 }
 
 end() {
+    local caller_file="${BASH_SOURCE[1]}"
+    local caller_line="${BASH_LINENO[0]}"
     # err=$(echo "$1" | grep -E "^[1-9][0-9]*$" || true)
-    err=$(echo "$1" | grep -E "^[0-9]+$" || true)
-    [ "$err" ] && shift && [ "$err" != "0" ] && prefix="[ERROR]" || prefix=""
-    [ "$1" = "-n" ] && n="-n" && shift || n=
+    err=$(echo "${1:-}" | grep -E "^[0-9]+$" || true)
+    [ "$err" ] && shift
+    if [ "$err" -a "$err" != "0" ]; then
+        prefix="[ERROR]"
+        karen_debug && suffix="on $caller_file:$caller_line" || suffix=
+    else
+        prefix=
+        suffix=
+    fi
+        
+    [ "${1:-}" = "-n" ] && n="-n" && shift || n=
     message=${@:-Finished processing}
-    log $err $prefix "$message"
+    log $err $prefix "$message" $suffix
     exit ${err:-0}
 }
+
 yesno() {
     default=n
     choice="y/N"
@@ -57,7 +68,8 @@ yesno() {
 }
 
 get_config() {
-    env | egrep "$ENV_PATTERN"
+    [ -z "$ENV_PATTERN" ] && log 1 "$ENV_PATTERN is empty" && return 1
+    set | egrep "$ENV_PATTERN" || log 1 error_empty_config
 }
 
 usage() {

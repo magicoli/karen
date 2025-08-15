@@ -1,10 +1,8 @@
 #!/bin/bash
 
-PHPVER=${PHPVER:-8.3}
-
 # Default to reload, but allow override via environment variable
 
-set -e
+set -euo pipefail
 
 . $(dirname $(realpath $0))/karen-helper
 
