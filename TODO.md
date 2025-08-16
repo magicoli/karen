@@ -15,6 +15,17 @@ Do in order, every step must be validated before the next one
     - [ ] Keep in production and wait for the phone to ring for clients complains
     - [ ] Evaluate the needs and advantages of integrating Amavis
 - [ ] Adapt update-google-ips.sh for cron and add it for periodic updates
+- [ ] Check if postfix-reload script is up-to-date and integrate in Karen environment
+
+## Certificate Management
+- [ ] Fix Let's Encrypt certificate path automation for mail services
+  - Current issue: Postfix/Dovecot use hardcoded paths like `/etc/letsencrypt/live/mail.magiiic.com-0002/`
+  - Problem: Certbot creates new numbered directories when domains change
+  - Solutions to evaluate:
+    - [ ] Compare existing scripts with tools/certbot-mail-deploy-hook.sh
+    - [ ] Implement stable symlink approach (/etc/ssl/mail-certs -> current cert)
+    - [ ] Integrate with Karen deployment system
+    - [ ] Test automatic reload of mail services
 
 **Once everyting is stable**
 - [ ] Migrate web server to Caddy (this time, I will need a test server)

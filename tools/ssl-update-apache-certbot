@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# to use DNS protocol:
+# https://linux.m2osw.com/setting-bind-get-letsencrypt-wildcards-work-your-system-using-rfc-2136
+
+PROCEED=yes
+DEBUG=yes
+[ ! "$WORKAROUND" ] && WORKAROUND=no
+[ ! "$SELFSIGNED" ] && SELFSIGNED=no
+
+PATH=$(dirname "$0"):$PATH
+. $(which helpers) || exit 1
+
+OPTS="fswhvq"
+LONGOPTS="force,self-signed,workaround,quiet,verbose,help"
+
+parsed_opts=$(getopt -o $OPTS -l "$LONGOPTS" -- "$@" 2>$TMP.getopt)  || end $? "$USAGE $(echo; sed "s/^getopt[\b:]*//" $TMP.getopt)"
+eval "set -- $parsed_opts"
+for o do
+  case $o in
+    (-f|--force) FORCE=yes; shift;;
+    (-s|--self-signed) SELFSIGNED=yes; shift;;
+    (-w|--workaround) SELFSIGNED=yes; shift;;
+    (-h|--help) help; end;;
+    (-p|--path) printf '%s\n' "$o set to $2"; shift 2;;
+    (-q|--quiet) STDOUT="/dev/null"; QUIET=yes; DEBUG=no; shift;;
+    (-v|--verbose) STDERR="&1"; DEBUG=yes; shift;;
+    (--) shift; break;;
+    # (*) log 1 "option $1 not processed by helper $2";
+  esac
+done
+# [ "$#" -eq 0 ] || echo $@
+
+[ $ERROR ] && end $ERROR "$(usage)
+type '$PGM --help' for more info"
+
+[ "$1" ] || end 1 "usage: $PGM website.conf"
+ip=$(hostname -I | cut -d " " -f 1)
+#echo "$ip" | egrep -q "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" || end 2 "Could not guess IP address"
+echo "$ip" | egrep -q "^172\.|^192\.|^10\." && ip=$(dig +short $(hostname) | tail -1)
+log ip $ip
+echo "$ip" | egrep -v "^172\.|^192\.|^10\." | egrep -q "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" || end 2 "Could not guess IP address"
+
+command=$(which /opt/certbot/certbot-auto certbot letsencrypt-auto /opt/letsencrypt/letsencrypt-auto | head -1)
+[ "$command" ] || end 3 "Letsencrypt client not found"
+
+[ "$1" = "-n" ] && PROCEED=no && shift
+
+log client $command
+
+for conf in $@
+do
+  if [ "$SELFSIGNED" = "yes" ]
+  then
+    conf=$(readlink -f $conf)
+    [ ! -f "$conf" ] && end 1 "$conf not found"
+    log "Checking $conf"
+    echo $conf | grep -q "\-ssl.conf" && log "$conf ignored" && continue
+    sslconf=$(echo $conf | sed "s/\.conf/-local-ssl.conf/")
+    [ -f "$sslconf" -a "$FORCE" != "yes" ] && log 1 "$sslconf already exists, ignoring" && continue
+    [ -f "/etc/ssl/certs/ssl-cert-snakeoil.pem" -a -f "/etc/ssl/private/ssl-cert-snakeoil.key" ] || end 4 "self-signed certificate not found"
+    grep -B9999 '</VirtualHost>' $conf | grep -v '</VirtualHost>' | sed -E "s/(.*VirtualHost.*):80/\1:443/" > $sslconf
+    echo "  SSLEngine on" >> $sslconf
+    echo "  SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem" >> $sslconf
+    echo "  SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key" >> $sslconf
+    grep -A9999 '</VirtualHost>' $conf >> $sslconf
+    log "$sslconf created"
+    a2ensite $(basename $sslconf) && log "$sslconf enabled"
+    apachereload="true"
+
+    # for domain in $(egrep "^[[:blank:]]*Server(Name|Alias)[[:blank:]]" $conf | sed -e "s/.*ServerName[[:blank:]]*//"  -e "s/.*ServerAlias[[:blank:]]*//" -e "s/\*/WILDCARD/g")
+    # do
+    #   domain=$(echo $domain | sed "s/WILDCARD/*/g")
+    #   echo "$domain" | egrep -q  "\*" && log "  $domain wildcards ignored" && continue
+    #   echo "$domain" | egrep -q  "xn--" && log "  $domain unicode not supported" && continue
+    #   printf "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/$domain.key -out /etc/ssl/certs/$domain.crt -subj \"/C=FR/ST=IDF/L=Paris/O=ACME/CN=$domain\"" >> $TMP.cmd
+    #   log "  $domain added"
+    # done
+    # cat $TMP.cmd
+    # exit ## DEBUG
+    continue
+  fi
+
+  log "Checking $conf"
+  printf "$command" >> $TMP.cmd
+  ## WORKAROUND for schmilblik
+  if [ "$WORKAROUND" = "yes" ]
+  then
+      DocumentRoot=$(egrep "^[[:blank:]]*DocumentRoot[[:blank:]]" $conf \
+			    | sed "s/^[[:blank:]]*DocumentRoot[[:blank:]]*//")
+      [ ! -d "$DocumentRoot" ] && echo "$DocumentRoot does not exist" >&2 && break
+      printf " certonly --authenticator standalone --webroot-path $DocumentRoot --pre-hook \"service apache2 stop\" --post-hook \"service apache2 start\"" >> $TMP.cmd
+  fi
+  ## End WORKAROUND
+  for domain in $(egrep "^[[:blank:]]*Server(Name|Alias)[[:blank:]]" $conf | sed -e "s/.*ServerName[[:blank:]]*//"  -e "s/.*ServerAlias[[:blank:]]*//" -e "s/\*/WILDCARD/g")
+  do
+    domain=$(echo $domain | sed "s/WILDCARD/*/g")
+    echo "$domain" | egrep -q  "\*" && log "  $domain wildcards ignored" && continue
+    echo "$domain" | egrep -q  "xn--" && log "  $domain unicode not supported" && continue
+    dig @8.8.8.8 +short "$domain" | grep -q $ip && printf " -d $domain" >> $TMP.cmd && log "  $domain added" && continue
+    log " $domain not local"
+  done
+  echo >> $TMP.cmd
+done
+
+if [ "$SELFSIGNED" = "yes" ]; then
+  if [ "$apachereload" = "true" ]; then
+    service apache2 reload && log "apache2 conf reloaded"
+  fi
+  end "Self signed, end processing"
+fi
+
+grep -v "^$command$" $TMP.cmd | grep "." || end "nothing to do"
+
+if [ "$PROCEED" == yes ]
+then
+  log "Executing"
+  . $TMP.cmd
+fi

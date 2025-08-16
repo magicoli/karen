@@ -1,0 +1,189 @@
+#!/bin/sh
+
+ENABLED=/etc/apache2/sites-enabled
+AVAILABLE=/etc/apache2/sites-available
+NGX_AVAILABLE=/etc/nginx/sites-available
+NGX_ENABLED=/etc/nginx/sites-enabled
+SNIPPETS=/etc/nginx/snippets
+MAGIIIC=/etc/magiiic
+
+export PATH=$PATH:$(dirname $0)
+DEBUG=yes
+
+SYNTAX="<user> <domain> [<alias>] [<alias>] [...]"
+
+. $(which helpers) || exit 1
+
+for loc in $AVAILABLE /opt/magic/etc/apache2 $MAGIIIC
+do
+  [ -f "$loc/template.conf" ] && TEMPLATE="$loc/template.conf" && log template $TEMPLATE && break
+done
+for loc in $AVAILABLE /opt/magic/etc/apache2 $MAGIIIC
+do
+  [ -d "$loc/placeholder" ] && PLACEHOLDER=$loc/placeholder && log "placeholder $PLACEHOLDER" && break
+done
+[ ! "$TEMPLATE" ] && end 1 "No template found"
+
+user=$1
+domain=$(echo "$2" | sed "s/^www\.//")
+shift 2
+[ ! "$user" ] && usage && end 2 missing user name
+[ ! "$domain" ] && usage && end 2 missing domain name
+
+getconf() {
+  log "reading $domain.conf"
+  grep -A1000 "^[[:blank:]]*<VirtualHost.*:8080>" "$AVAILABLE/$domain.conf" \
+    | grep -m 1 -B1000 "^[[:blank:]]*</VirtualHost>" \
+    > $TMP.conf
+}
+getvar() {
+  var="$1"
+  egrep "^[[:blank:]]*$var[[:blank:]]" $TMP.conf \
+    | tail -1 \
+    | sed "s/^[[:blank:]]*$var[[:blank:]]//" \
+    | sed -e  's/^"*//' -e  's/"*$//'
+}
+
+log "$user $domain"
+[ "$1" ] && log "  aliases $@"
+
+id $user >/dev/null || end 3 "$user is not a valid user"
+group=$(id $user | cut -d "(" -f 3 | cut -d ")" -f 1)
+home=$(eval echo ~$user)
+cd $home || end 4
+
+# === APACHE VHOST SETUP ===
+if [ -e "$AVAILABLE/$domain.conf" ]; then
+  log "$AVAILABLE/$domain.conf present"
+else
+  realdomain=$domain
+  realprefix=www
+  cat $TEMPLATE > $TMP.template
+  for prefix in dev staging preview test alpha beta new shop local www
+  do
+    echo "$domain" | grep -q "^$prefix\." \
+      && realdomain=$(echo "$domain" | sed "s/^$prefix\.//") \
+      && realprefix=$prefix \
+      && log "subdomain $prefix from $realdomain" \
+      && break
+  done
+
+  sed -e "s/USER/$user/g" \
+      -e "s/GROUP/$group/g" \
+      -e "s|<VirtualHost.*|<VirtualHost 127.0.0.1:8080>|" \
+      -e "s|/DOMAIN/www|/$realdomain/$realprefix|g" \
+      -e "s|/DOMAIN/tmp|/$realdomain/tmp/$realprefix|g" \
+      -e "s/DOMAIN/$domain/g" \
+      "$TMP.template" > "$AVAILABLE/$domain.conf.tmp"
+
+  grep -B1000 ServerAlias "$AVAILABLE/$domain.conf.tmp" > "$AVAILABLE/$domain.conf"
+  for alias in $@
+  do
+    grep -q "  ServerAlias $alias" "$AVAILABLE/$domain.conf.tmp" || echo "  ServerAlias $alias"
+    grep -q "  ServerAlias www.$alias" "$AVAILABLE/$domain.conf.tmp" || echo "  ServerAlias www.$alias"
+    grep -q "  ServerAlias *.$alias" "$AVAILABLE/$domain.conf.tmp" || echo "  ServerAlias *.$alias"
+  done >> "$AVAILABLE/$domain.conf"
+  grep -A1000 ServerAlias "$AVAILABLE/$domain.conf.tmp" | grep -v ServerAlias  >> "$AVAILABLE/$domain.conf"
+  rm "$AVAILABLE/$domain.conf.tmp"
+fi
+
+getconf
+
+DOCUMENTROOT=$(getvar "DocumentRoot")
+[ -e "$DOCUMENTROOT" ] && log "DocumentRoot: $DOCUMENTROOT present" || log "DocumentRoot: $DOCUMENTROOT"
+
+for param in "DocumentRoot" "php_admin_value upload_tmp_dir" "php_admin_value session.save_path"
+do
+  dir=$(getvar "$param")
+  [ ! "$dir" ] && continue
+  [ -d "$dir" ] && continue
+  mkdir -p "$dir" || end 8
+  chown -R $user:$group "$dir" || end 9
+done
+
+cd "$DOCUMENTROOT" || end $?
+find -type f | grep -q .
+if [ $? -ne 0 ]; then
+  if [ "$PLACEHOLDER" -a -d $PLACEHOLDER ]; then
+    log "DocumentRoot empty, fill with placeholder"
+    rsync -Wa $PLACEHOLDER/ ./ --exclude "index.*"
+    ln -s construction.html index.html
+  else
+    log "DocumentRoot empty but no placeholder $PLACEHOLDER, saying hello"
+    echo "Hello, world!" > index.html
+  fi
+  chown -R $user:$group .
+fi
+
+# === NGINX CONFIG GENERATION ===
+NGX_CONF="$NGX_AVAILABLE/$domain"
+
+cat > "$NGX_CONF" <<EOF
+server {
+    listen 80;
+    server_name $domain www.$domain;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name $domain www.$domain;
+
+    ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+    include $SNIPPETS/ssl-params.conf;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 256;
+
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|woff2?|svg)$ {
+        expires 7d;
+        access_log off;
+    }
+
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-Content-Type-Options nosniff;
+    add_header Referrer-Policy strict-origin-when-cross-origin;
+}
+EOF
+
+[ ! -e "$SNIPPETS/ssl-params.conf" ] && cat > "$SNIPPETS/ssl-params.conf" <<EOF
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384";
+ssl_session_timeout 1d;
+ssl_session_cache shared:SSL:50m;
+ssl_session_tickets off;
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 1.1.1.1 8.8.8.8 valid=300s;
+resolver_timeout 5s;
+EOF
+
+ln -sf "$NGX_CONF" "$NGX_ENABLED/$domain"
+
+if [ ! -e "$ENABLED/$domain.conf" ]; then
+  a2ensite $domain.conf || end 10
+fi
+
+log restarting apache && apachectl graceful
+log restarting nginx && systemctl reload nginx
+
+unset DEBUG
+end

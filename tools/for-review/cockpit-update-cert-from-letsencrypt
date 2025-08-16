@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Adapted from https://github.com/cockpit-project/cockpit/wiki/Cockpit-with-LetsEncrypt
+
+# Install cockpit (Debian 10):
+# echo 'deb http://deb.debian.org/debian buster-backports main' > \
+#  /etc/apt/sources.list.d/backports.list
+# sudo apt update
+# sudo apt install -t buster-backports cockpit
+
+PID=$$
+[ "$PGM" ] || PGM=`basename $0`
+[ "$TMP" ] || TMP=/tmp/$PGM.$PID
+[ "$LOCK" ] || LOCK=/tmp/.$PGM.lock
+
+trap 'rm -f $TMP.* $LOCK' EXIT
+
+DOMAIN=$(hostname --long)
+[ ! "$DOMAIN" ] && echo "can not get host name $DOMAIN" && exit 1
+
+# echo "create /etc/systemd/system/cockpit.socket.d/listen.conf for rut it as daemon on port 443"
+# cat <<EOF > /etc/systemd/system/cockpit.socket.d/listen.conf
+# [Socket]
+# ListenStream= 
+# ListenStream=9090 
+# ListenStream=443
+# EOF
+
+livefolder=$(ls -drt /etc/letsencrypt/live/$DOMAIN /etc/letsencrypt/live/$DOMAIN-[0-9]* 2>/dev/null| tail -1)
+[ ! "$livefolder" ] && echo "$PGM: /etc/letsencrypt/live/$DOMAIN not found" >&2 && exit 2
+[ ! -f "$livefolder/fullchain.pem" ] || [ ! -f "$livefolder/privkey.pem" ] && echo "$PGM: no valid key in $livefolder" >&2 && exit 3
+cockpitcert=/etc/cockpit/ws-certs.d/1-$DOMAIN.cert
+
+## quick and dirty check if cockpit cert needs an update
+[ -f "$cockpitcert" -a  "$cockpitcert" -nt "$livefolder/fullchain.pem" ] && echo "$PGM: $cockpitcert up-to-date" && exit 
+
+echo "$PGM: updating cockpit certificate for domain $DOMAIN"
+
+## merge certificate and key
+cat "$livefolder/fullchain.pem" "$livefolder/privkey.pem" > /etc/cockpit/ws-certs.d/1-$DOMAIN.cert && echo "$PGM: $cockpitcert updated"
+
+# restart cockpit daemon
+systemctl daemon-reload && systemctl restart cockpit.socket

@@ -1,0 +1,25 @@
+#!/bin/sh
+
+PGM=$(basename "$0")
+TMP=/tmp/$PGM.$$
+LOG=/tmp/$PGM.log
+
+PATH=$(dirname "$0"):$PATH
+. $(which helpers) || exit 1
+
+[ -e /opt/letsencrypt/letsencrypt-auto ] || end 2 could not find letsencrypt binaries
+
+/opt/letsencrypt/letsencrypt-auto renew > $LOG
+
+[ -f "$LOG" ] || end
+
+grep -A2 "new certificate deployed" $LOG \
+     | grep -v "^--$"
+
+grep "WARNING" $LOG
+
+grep -A1000 \
+     -e "^IMPORTANT NOTES:" \
+     -e "The following certs could not be renewed:" \
+     -e "The following certs have been renewed:" \
+     $LOG
