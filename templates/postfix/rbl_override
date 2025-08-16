@@ -1,0 +1,26 @@
+# Google services compatibility whitelist
+# NEEDS REVIEW: Update Google IP ranges periodically
+# Last update: 2025-08-16
+
+/mail-.*\.google\.com$/	OK
+64.18.0.0/20   permit
+64.233.160.0/19   permit
+66.102.0.0/20   permit
+66.249.80.0/20   permit
+72.14.192.0/18   permit
+74.125.0.0/16   permit
+108.177.8.0/21   permit
+173.194.0.0/16   permit
+207.126.144.0/20   permit
+209.85.128.0/17   permit
+216.58.192.0/19   permit
+216.239.32.0/19   permit
+2001:4860:4000::/36   permit
+2404:6800:4000::/36   permit
+2607:f8b0:4000::/36   permit
+2800:3f0:4000::/36   permit
+2a00:1450:4000::/36   permit
+2c0f:fb50:4000::/36   permit
+172.217.0.0/19   permit
+2a01:4f8:1c1b:48ae::/64 permit
+116.203.183.155	      permit
