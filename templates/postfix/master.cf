@@ -177,4 +177,8 @@ mailman unix - n n - - pipe
 relay unix - - y - - smtp
     -o smtp_fallback_relay=
 
+# === RBL/ANTI-SPAM SERVICES ===
+# DNS blog service for improved RBL performance
+dnsblog unix - - y - 0 dnsblog
+
 # END CUSTOM CONFIGURATION

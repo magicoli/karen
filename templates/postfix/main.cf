@@ -99,26 +99,30 @@ policy-spf_time_limit = 3600s
 # NEEDS REVIEW (pro/cons, current implementation efficiency)
 mailbox_command = procmail -a "$EXTENSION"
 
-# === ANTI-SPAM RESTRICTIONS ===
-# Require HELO and validate hostname format
+# Require HELO and validate hostname format (conservative approach)
+# NOTE: reject_unknown_helo_hostname disabled - causes issues with cloud providers
 smtpd_helo_required = yes
 smtpd_helo_restrictions = 
     permit_mynetworks,
     permit_sasl_authenticated,
     reject_invalid_helo_hostname,
-    reject_non_fqdn_helo_hostname
+    reject_non_fqdn_helo_hostname,
+    check_client_access hash:/etc/postfix/rbl_override,
+    reject_rbl_client zen.spamhaus.org
 
-# Validate sender domains, use custom whitelist and blacklist
-# NEEDS REVIEW (current implementation efficiency)
+# Validate sender domains, use conservative RBL checks, custom whitelist and blacklist  
+# NOTE: RHSBL checks disabled - cause issues with legitimate providers
 smtpd_sender_restrictions = 
     permit_mynetworks,
     permit_sasl_authenticated,
     reject_non_fqdn_sender,
     reject_unknown_sender_domain,
     check_client_access hash:/etc/postfix/rbl_override,
+    reject_rbl_client zen.spamhaus.org,
     check_sender_access hash:/etc/postfix/sender_access
 
-# Multi-layer recipient validation with DNSWL whitelist and policy service
+# Multi-layer recipient validation with conservative RBL checks, DNSWL whitelist and policy service
+# NOTE: Only zen.spamhaus.org enabled - most conservative RBL with good reputation
 smtpd_recipient_restrictions = 
     reject_non_fqdn_recipient,
     reject_unknown_recipient_domain,
@@ -126,8 +130,21 @@ smtpd_recipient_restrictions =
     permit_sasl_authenticated,
     check_client_access hash:/etc/postfix/rbl_override,
     permit_dnswl_client list.dnswl.org=127.0.[0..255].[1..3],
+    reject_rbl_client zen.spamhaus.org,
     check_policy_service inet:127.0.0.1:10023,
     permit
+
+# === OPTIONAL AGGRESSIVE ANTI-SPAM (commented out due to false positives) ===
+# Enable these if spam becomes unmanageable and you can handle legitimate mail being rejected:
+# Additional RBL checks (higher false positive risk):
+#   reject_rbl_client bl.spamcop.net,
+#   reject_rbl_client cbl.abuseat.org,
+# RHSBL domain-based checks (often block legitimate cloud providers):
+#   reject_rhsbl_helo dbl.spamhaus.org,
+#   reject_rhsbl_reverse_client dbl.spamhaus.org,
+#   reject_rhsbl_sender dbl.spamhaus.org,
+# HELO hostname validation (blocks many cloud/shared hosting providers):
+#   reject_unknown_helo_hostname,
 
 # Basic client restrictions
 smtpd_client_restrictions = 
