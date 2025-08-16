@@ -12,12 +12,12 @@ KAREN_DIR=$(dirname $(realpath $BASH_SOURCE))
 
 # Main command dispatcher
 case "${1:-}" in
-    # help|--help)
-    #     _ "Karen - Server Configuration Management Tool"
-    #     echo
-    #     usage
-    #     detailed_help
-    #     ;;
+    help|--help)
+        _ "Karen - Server Configuration Management Tool"
+        echo
+        usage
+        detailed_help
+        ;;
     php)
         exec "$KAREN_BIN/setup-php" "${@:2}"
         ;;
@@ -35,71 +35,13 @@ case "${1:-}" in
         echo "https://github.com/magicoli/karen"
         ;;
     "")
-        printf "LANGUAGE: $LANGUAGE"
-        printf "\n_\t"
-        _ "Simple string"
-        printf "\n_e\t"
-        _e "Expanded string with %s" "value"
-        # printf "\n_e\t"
-        # # TRANSLATORS: %s is a first name
-        # _e "Expanded string for %s" "value"
-    printf "\n_n 1\t"
-    _n "Singular string" "Plural strings" 1
-        printf "\n_n 2\t"
-        _n "Singular string" "Plural strings" 2
-    printf "\n_p 2\t"
-    _p "Singular string" "Plural strings" 2
-    printf "\n_ne1\t"
-    _ne "%s string with expansion" "%s strings with expansion" 1 1
-    printf "\n_ne2\t"
-    _ne "%s string with expansion" "%s strings with expansion" 2 2
-        printf "\n_x1\t"
-        _x "String in context" "Clothing"
-        printf "\n_x2\t"
-        _x "String in context" "Characters"
-        printf "\n_xc\t"
-        _c "String in context" "Clothing"
-        printf "\n_c2\t"
-        _c "String in context" "Characters"
-    printf "\n_xe\t"
-    _xe "Expanded in context: %s" "Clothing" "value"
-    printf "\n_nx1\t"
-    _nx "One item (ctx)" "Many items (ctx)" 1 "Cart"
-    printf "\n_nx2\t"
-    _nx "One item (ctx)" "Many items (ctx)" 2 "Cart"
-    printf "\n_nx1b\t"
-    _nx "One item (ctx)" "Many items (ctx)" 1 "Wishlist"
-    printf "\n_nx2b\t"
-    _nx "One item (ctx)" "Many items (ctx)" 2 "Wishlist"
-    printf "\n_nxe1\t"
-    _nxe "%s item (ctx)" "%s items (ctx)" 1 "Cart" 1
-    printf "\n_nxe2\t"
-    _nxe "%s item (ctx)" "%s items (ctx)" 2 "Cart" 2
-    printf "\n_nxe1b\t"
-    _nxe "%s item (ctx)" "%s items (ctx)" 1 "Wishlist" 1
-    printf "\n_nxe2b\t"
-    _nxe "%s item (ctx)" "%s items (ctx)" 2 "Wishlist" 2
-        printf "\n_m\t"
-        _m "marked string"
-        # printf "\n_m\t"
-        # _m "other string"
-        for var in "marked string"
-        do
-            printf "\n\$var\t"
-            _ $var
-        done
-        echo
-        echo done
-# DEBUG: avoid distractions while testing i18n
-#         system_message error_command_missing
-#         log 0 "
-# $(usage)"
-#         end
+        log 0 "$(system_message error_command_missing)
+$(usage)"
+        end
         ;;
-#     *)
-#         system_message error_command_unknown
-#         end 1 "'$1'
+    *)
+        end 1 "'$1' $(system_message error_command_unknown)
         
-# $(usage)"
-#         ;;
+$(usage)"
+        ;;
 esac

@@ -352,15 +352,32 @@ i18n_makepot() {
     fi
 }
 
+i18n_list_locales() {
+    # List immediate subdirectories of TEXTDOMAINDIR (locale names)
+    local d="$TEXTDOMAINDIR"
+    [ -d "$d" ] || return 0
+    for locdir in "$d"/*; do
+        [ -d "$locdir" ] || continue
+        basename "$locdir"
+    done
+}
+
 i18n_makepo() {
-    local locale="$1"
-    if [ -z "$locale" ]; then
-        echo "Usage: karen i18n makepo <locale>"
-        echo "Examples: karen i18n makepo fr_FR"
-        echo "          karen i18n makepo es_ES"
-        return 1
-    fi
+    local locale="${1:-}"
     
+    if [ -z "$locale" ]; then
+        # Update all locales found
+        local any=0
+        for loc in $(i18n_list_locales); do
+            any=1
+            i18n_makepo "$loc"
+        done
+        if [ "$any" -eq 0 ]; then
+            echo "(no locales found under $TEXTDOMAINDIR)"
+        fi
+        return 0
+    fi
+
     echo "🌍 Creating/updating PO file for locale: $locale"
     
     local pot_file="$TEXTDOMAINDIR/$TEXTDOMAIN.pot"
@@ -394,12 +411,18 @@ i18n_makepo() {
 }
 
 i18n_makemo() {
-    local locale="$1"
+    local locale="${1:-}"
     if [ -z "$locale" ]; then
-        echo "Usage: karen i18n makemo <locale>"
-        echo "Examples: karen i18n makemo fr_FR"
-        echo "          karen i18n makemo es_ES"
-        return 1
+        # Compile all locales found
+        local any=0
+        for loc in $(i18n_list_locales); do
+            any=1
+            i18n_makemo "$loc"
+        done
+        if [ "$any" -eq 0 ]; then
+            echo "(no locales found under $TEXTDOMAINDIR)"
+        fi
+        return 0
     fi
     
     echo "🌍 Compiling MO file for locale: $locale"
@@ -429,6 +452,13 @@ i18n_makemo() {
     fi
 }
 
+i18n_makeall() {
+    # Make POT, then update all PO files found under locale/
+    i18n_makepot || return 1
+    i18n_makepo || return 1
+    echo "✓ POT and all PO files are up to date"
+}
+
 # Main i18n dispatcher function
 i18n() {
     case "${1:-}" in
@@ -441,6 +471,9 @@ i18n() {
         makemo)
             i18n_makemo "${2:-}"
             ;;
+        makeall|sync)
+            i18n_makeall
+            ;;
         info)
             i18n_info
             ;;
@@ -448,16 +481,18 @@ i18n() {
             echo "Usage: karen i18n <command> [options]"
             echo
             echo "Commands:"
-            echo "  makepot           Extract strings and create/update POT file"
-            echo "  makepo <locale>   Create or update PO file for locale"
-            echo "  makemo <locale>   Compile PO file to MO file"
+            echo "  makepot             Extract strings and create/update POT file"
+            echo "  makepo [<locale>]   Create or update PO file (all locales if omitted)"
+            echo "  makemo [<locale>]   Compile PO file(s) to MO (all locales if omitted)"
+            echo "  makeall|sync        makepot + makepo for all locales"
             echo "  info              Show i18n configuration"
             echo
             echo "Workflow:"
-            echo "  1. karen i18n makepot          # Extract translatable strings"
-            echo "  2. karen i18n makepo fr_FR     # Create French translation file"
+            echo "  1. karen i18n makeall          # POT + update all PO files"
+            echo "     # or: karen i18n makepot     # Extract translatable strings"
+            echo "     # and: karen i18n makepo     # Update all locales"
             echo "  3. Edit locale/fr_FR/LC_MESSAGES/karen.po"
-            echo "  4. karen i18n makemo fr_FR     # Compile to binary format"
+            echo "  4. karen i18n makemo           # Compile all to binary format"
             echo "  5. LANGUAGE=fr_FR karen --help # Test translation"
             ;;
     esac

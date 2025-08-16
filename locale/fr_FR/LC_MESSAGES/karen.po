@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Karen 1.0.0\n"
 "Report-Msgid-Bugs-To: bugs@magiiic.com\n"
-"POT-Creation-Date: 2025-08-16 08:18+0200\n"
+"POT-Creation-Date: 2025-08-16 08:33+0200\n"
 "PO-Revision-Date: 2025-08-16 04:14+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -68,21 +68,21 @@ msgid_plural "Many items (ctx)"
 msgstr[0] "Un souhait (ctx)"
 msgstr[1] "Plusieurs souhaits (ctx)"
 
-#: /opt/magic/etc/karen/karen:71 /opt/magic/etc/karen/karen:73
+#: /opt/magic/etc/karen/karen:75 /opt/magic/etc/karen/karen:77
 msgctxt "Cart"
 msgid "%s item (ctx)"
 msgid_plural "%s items (ctx)"
 msgstr[0] "%s article (ctx)"
 msgstr[1] "%s articles (ctx)"
 
-#: /opt/magic/etc/karen/karen:75 /opt/magic/etc/karen/karen:77
+#: /opt/magic/etc/karen/karen:79 /opt/magic/etc/karen/karen:81
 msgctxt "Wishlist"
 msgid "%s item (ctx)"
 msgid_plural "%s items (ctx)"
 msgstr[0] "%s souhait (ctx)"
 msgstr[1] "%s souhaits (ctx)"
 
-#: /opt/magic/etc/karen/karen:75
+#: /opt/magic/etc/karen/karen:83
 msgid "marked string"
 msgstr "chaîne marquée"
 
