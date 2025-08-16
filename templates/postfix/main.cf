@@ -95,9 +95,9 @@ sender_bcc_maps = hash:/etc/postfix/sender_bcc
 policy-spf_time_limit = 3600s
 
 # === MAILBOX DELIVERY ===
-# Use procmail for local delivery (vs Dovecot LDA)
-# NEEDS REVIEW (pro/cons, current implementation efficiency)
-mailbox_command = procmail -a "$EXTENSION"
+# Use Dovecot LMTP for all mail delivery (virtual and local)
+# Local delivery also goes through LMTP for consistent Sieve processing
+# REMOVED: mailbox_command = procmail -a "$EXTENSION"
 
 # Require HELO and validate hostname format (conservative approach)
 # NOTE: reject_unknown_helo_hostname disabled - causes issues with cloud providers
