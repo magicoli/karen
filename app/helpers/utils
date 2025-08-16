@@ -73,9 +73,9 @@ get_config() {
 }
 
 usage() {
-    echo "Usage: $PGM [COMMAND] [OPTIONS]"
+    _e "Usage: %s [COMMAND] [OPTIONS]" "$PGM"
     echo
-    cat $KAREN_BASE/app/doc/usage.txt
+    cat "$KAREN_BASE/app/doc/usage.txt"
 }
 
 detailed_help() {

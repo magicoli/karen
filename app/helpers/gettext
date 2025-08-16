@@ -1,0 +1,466 @@
+#!/bin/bash
+
+# Gettext localization helper for Karen
+# Provides PHP-style translation functions
+# Usage: source this file in init to enable translations
+
+[ -z "$init_base" ] && echo "$BASH_SOURCE must only be sourced by karen helpers" && return
+
+log starting $BASH_SOURCE
+
+log "LANGUAGE (initial) $LANGUAGE"
+# Helper: detect whether an env var was passed specifically for this process
+# by comparing current env to parent process env (/proc/$PPID/environ).
+# Returns 0 if the variable exists in current env but not in parent env (treated as explicit).
+env_is_explicit() {
+    local var="$1"
+    local curr
+    curr=$(printenv "$var" 2>/dev/null || true)
+    [ -n "$curr" ] || return 1
+    local penv="/proc/$PPID/environ"
+    if [ -r "$penv" ]; then
+        local parent_val
+        parent_val=$(tr '\0' '\n' < "$penv" 2>/dev/null | sed -n -E "s/^${var}=(.*)$/\1/p" | head -n1 || true)
+        if [ -z "$parent_val" ]; then
+            # parent didn't set it -> current is explicit
+            return 0
+        fi
+        if [ "$curr" != "$parent_val" ]; then
+            # value differs -> current was explicitly provided/overridden
+            return 0
+        fi
+        return 1
+    fi
+    # If we cannot read parent environ, be conservative: treat as explicit
+    return 0
+}
+
+# Determine locale selection preferring explicitly provided values first
+if env_is_explicit LANGUAGE; then
+    lang_raw="$LANGUAGE"
+elif env_is_explicit LANG; then
+    lang_raw="$LANG"
+else
+    lang_raw="${LANGUAGE:-${LC_MESSAGES:-${LANG:-}}}"
+fi
+
+# Normalize a LANGUAGE-like value (handles colon lists). Rules:
+# - If token contains '.' or '@' keep it as-is.
+# - If bare language (eg 'fr') and $LANG starts with same base and has region/encoding, use $LANG.
+# - Else if $LANG has a region, derive token_region and append terminal charmap.
+# - Else append terminal charmap (default UTF-8).
+normalize_language_list() {
+    local input="$1"
+    local term_charmap
+    term_charmap="$(locale charmap 2>/dev/null || true)"
+    term_charmap="${term_charmap:-UTF-8}"
+    local lang_from_LANG="${LANG:-}"
+    local out=""
+    IFS=':' read -ra parts <<< "$input"
+    for p in "${parts[@]}"; do
+        [ -z "$p" ] && continue
+        local norm
+            if [[ "$p" == *.* || "$p" == *@* ]]; then
+                # already has encoding/modifier: keep as-is
+                norm="$p"
+            elif [[ "$p" == *_* ]]; then
+                # already has region (ll_CC). If encoding missing, append terminal charmap
+                if [[ "$p" == *.* ]]; then
+                    norm="$p"
+                else
+                    norm="${p}.${term_charmap}"
+                fi
+            else
+                # bare language (eg 'fr')
+                if [[ -n "$lang_from_LANG" && "$lang_from_LANG" == ${p}_* ]]; then
+                    # LANG already provides a matching region+encoding, prefer it
+                    norm="$lang_from_LANG"
+                elif [[ -n "$lang_from_LANG" && "$lang_from_LANG" == *_* ]]; then
+                    # derive region from LANG and append terminal charmap
+                    local region
+                    region="$(printf '%s' "$lang_from_LANG" | sed -E 's/^[^_]+_([^\.@]+).*/\1/')"
+                    if [ -n "$region" ]; then
+                        norm="${p}_${region}.${term_charmap}"
+                    else
+                        norm="${p}.${term_charmap}"
+                    fi
+                else
+                    norm="${p}.${term_charmap}"
+                fi
+            fi
+        out="${out:+$out:}$norm"
+    done
+    printf '%s' "$out"
+}
+
+LANGUAGE="$(normalize_language_list "$lang_raw")"
+
+# Export domain/dir and locale vars. Use first normalized token for LC_*/LANG
+TEXTDOMAIN="${TEXTDOMAIN:-karen}"
+TEXTDOMAINDIR="${TEXTDOMAINDIR:-$KAREN_BASE/locale}"
+export TEXTDOMAIN TEXTDOMAINDIR LANGUAGE
+first_norm="${LANGUAGE%%:*}"
+if [ -n "$first_norm" ]; then
+    export LC_ALL="$first_norm"
+    export LC_MESSAGES="$first_norm"
+    export LANG="$first_norm"
+fi
+if karen_debug; then
+    echo "DEBUG i18n: lang_raw='$lang_raw' LANGUAGE='$LANGUAGE' LC_ALL='${LC_ALL:-}'" >&2
+fi
+# log LANG: $LANG
+# log LANGUAGE: $LANGUAGE
+# Ensure gettext is available
+if ! command -v gettext >/dev/null 2>&1; then
+    # Fallback - just return the original text
+    GETTEXT_AVAILABLE=0
+else
+    GETTEXT_AVAILABLE=1
+fi
+
+# Core translation function
+_gettext() {
+    local message="$1"
+    if [ $GETTEXT_AVAILABLE -eq 1 ]; then
+        # Debug: show environment
+        if karen_debug; then
+            echo "DEBUG gettext: LANGUAGE=$LANGUAGE TEXTDOMAIN=$TEXTDOMAIN TEXTDOMAINDIR=$TEXTDOMAINDIR" >&2
+            echo "DEBUG gettext: message='$message'" >&2
+        fi
+        gettext "$message"
+    else
+        printf "%s" "$message"
+    fi
+}
+
+# Core plural translation function
+_ngettext() {
+    local singular="$1"
+    local plural="$2" 
+    local count="$3"
+    if [ $GETTEXT_AVAILABLE -eq 1 ]; then
+        ngettext "$singular" "$plural" "$count"
+    else
+        if [ "$count" -eq 1 ]; then
+            printf "%s" "$singular"
+        else
+            printf "%s" "$plural"
+        fi
+    fi
+}
+
+# PHP-style translation aliases
+
+# _() - Simple translation (most common)
+# Accept either a single quoted string or multiple words/args; join args with spaces.
+_() {
+    local IFS=' '
+    _gettext "$*"
+}
+
+# _n() - Plural translation (alias _p)
+_n() {
+    _ngettext "$1" "$2" "$3"
+}
+
+# Alias of _n() (plural translation)
+_p() { _ngettext "$1" "$2" "$3"; }
+
+# _x() - Translation with context
+_x() {
+    local message="$1"
+    local context="$2"
+    if [ $GETTEXT_AVAILABLE -eq 1 ]; then
+        # GNU gettext encodes context as "ctx\004msgid"
+        local sep=$'\004'
+        local ctx_msg="${context}${sep}${message}"
+        local translated
+        translated=$(gettext "$ctx_msg" 2>/dev/null)
+        # If no context translation, gettext returns ctx\004msgid; fallback to regular gettext
+        if [[ "$translated" == "$ctx_msg" || "$translated" == *$'\004'* ]]; then
+            gettext "$message"
+        else
+            printf "%s" "$translated"
+        fi
+    else
+        printf "%s" "$message"
+    fi
+}
+
+# Alias of _x (translation with context)
+_c() { _x "$1" "$2"; }
+
+# _nx() - Plural translation with context
+_nx() {
+    local singular="$1"
+    local plural="$2"
+    local count="$3"
+    local context="$4"
+    if [ $GETTEXT_AVAILABLE -eq 1 ]; then
+        # GNU gettext plural with context uses "ctx\004singular" / "ctx\004plural"
+        local sep=$'\004'
+        local ctx_s="${context}${sep}${singular}"
+        local ctx_p="${context}${sep}${plural}"
+        local translated
+        translated=$(ngettext "$ctx_s" "$ctx_p" "$count" 2>/dev/null)
+        if [[ "$translated" == "$ctx_s" || "$translated" == "$ctx_p" || "$translated" == *$'\004'* ]]; then
+            ngettext "$singular" "$plural" "$count"
+        else
+            printf "%s" "$translated"
+        fi
+    else
+        if [ "$count" -eq 1 ]; then
+            printf "%s" "$singular"
+        else
+            printf "%s" "$plural"
+        fi
+    fi
+}
+
+# Expand variants (use printf on the result)
+
+# _e() - Expand translation (printf on result)
+_e() {
+    local translated=$(_gettext "$1")
+    shift
+    printf "$translated" "$@"
+}
+
+# _ne() - Expand plural translation
+_ne() {
+    local translated=$(_ngettext "$1" "$2" "$3")
+    shift 3
+    printf "$translated" "$@"
+}
+
+# _xe() - Expand translation with context
+_xe() {
+    local translated=$(_x "$1" "$2")
+    shift 2
+    printf "$translated" "$@"
+}
+
+# _nxe() - Expand plural translation with context
+_nxe() {
+    local translated=$(_nx "$1" "$2" "$3" "$4")
+    shift 4
+    printf "$translated" "$@"
+}
+
+# _m() - Mark for extraction only; return original string unchanged (no translation at runtime)
+_m() {
+    printf "%s" "$@"
+}
+
+# Debug function to show current locale settings
+i18n_info() {
+    echo "Karen i18n Information:"
+    echo "  TEXTDOMAIN: $TEXTDOMAIN"
+    echo "  LANGUAGE: $LANGUAGE"
+    echo "  TEXTDOMAINDIR: $TEXTDOMAINDIR"
+    echo "  LANG: ${LANG:-not set}"
+    echo "  LC_ALL: ${LC_ALL:-not set}"
+    echo "  Gettext available: $GETTEXT_AVAILABLE"
+    if [ $GETTEXT_AVAILABLE -eq 1 ]; then
+        echo "  Gettext version: $(gettext --version | head -n1)"
+    fi
+}
+
+# i18n tools for managing translations
+
+i18n_makepot() {
+    echo "🌍 Extracting translatable strings to create POT file..."
+    
+    local pot_file="$TEXTDOMAINDIR/$TEXTDOMAIN.pot"
+    local temp_files_list=$(mktemp)
+    
+    # Create locale directory if needed
+    mkdir -p "$TEXTDOMAINDIR"
+    
+    # Build file list with specific scan targets
+    {
+        # Main karen script
+        [ -f "$KAREN_BASE/karen" ] && echo "$KAREN_BASE/karen"
+        
+        # All files in bin/
+        find "$KAREN_BASE/bin" -type f 2>/dev/null || true
+        
+        # All files in app/helpers/
+        find "$KAREN_BASE/app/helpers" -type f 2>/dev/null || true
+        
+        # All files in app/install/ (if it exists)
+        find "$KAREN_BASE/app/install" -type f 2>/dev/null || true
+        
+    } | grep -v -E "(${TEXTDOMAINDIR}|\.git/|/vendor/)" > "$temp_files_list"
+    
+    # Exclude files from .gitignore and .distignore if they exist
+    if [ -f "$KAREN_BASE/.gitignore" ]; then
+        local temp_filtered=$(mktemp)
+        while IFS= read -r pattern; do
+            # Skip empty lines and comments
+            [[ "$pattern" =~ ^[[:space:]]*$ ]] || [[ "$pattern" =~ ^[[:space:]]*# ]] && continue
+            # Convert gitignore pattern to grep pattern and exclude
+            grep -v "$pattern" "$temp_files_list" > "$temp_filtered" 2>/dev/null || cp "$temp_files_list" "$temp_filtered"
+            mv "$temp_filtered" "$temp_files_list"
+        done < "$KAREN_BASE/.gitignore"
+    fi
+    
+    if [ -f "$KAREN_BASE/.distignore" ]; then
+        local temp_filtered=$(mktemp)
+        while IFS= read -r pattern; do
+            [[ "$pattern" =~ ^[[:space:]]*$ ]] || [[ "$pattern" =~ ^[[:space:]]*# ]] && continue
+            grep -v "$pattern" "$temp_files_list" > "$temp_filtered" 2>/dev/null || cp "$temp_files_list" "$temp_filtered"
+            mv "$temp_filtered" "$temp_files_list"
+        done < "$KAREN_BASE/.distignore"
+    fi
+    
+    # Show what files will be processed
+    echo "Scanning $(wc -l < "$temp_files_list") files..."
+    
+    # Use xgettext to extract strings
+    xgettext \
+        --files-from="$temp_files_list" \
+        --from-code=UTF-8 \
+        --keyword=_ \
+        --keyword=_n:1,2 \
+        --keyword=_p:1,2 \
+        --keyword=_x:1,2c \
+        --keyword=_c:1,2c \
+        --keyword=_nx:1,2,4c \
+        --keyword=_e \
+        --keyword=_ne:1,2 \
+        --keyword=_xe:1,2c \
+        --keyword=_nxe:1,2,4c \
+        --keyword=_m \
+        --language=Shell \
+        --add-comments=TRANSLATORS: \
+        --package-name="Karen" \
+        --package-version="${PGM_VERSION:-0.0.1}" \
+        --copyright-holder="Karen Project" \
+        --output="$pot_file" \
+        --language=Shell --default-domain karen --msgid-bugs-address=bugs@magiiic.com --no-wrap
+    
+    rm -f "$temp_files_list"
+    
+    if [ -f "$pot_file" ]; then
+        local string_count=$(grep -c "^msgid" "$pot_file" 2>/dev/null || echo "0")
+        echo "✓ Created POT file: $pot_file ($string_count strings)"
+        echo "Next: Run 'karen i18n makepo <locale>' to create language files"
+    else
+        echo "✗ Failed to create POT file"
+        return 1
+    fi
+}
+
+i18n_makepo() {
+    local locale="$1"
+    if [ -z "$locale" ]; then
+        echo "Usage: karen i18n makepo <locale>"
+        echo "Examples: karen i18n makepo fr_FR"
+        echo "          karen i18n makepo es_ES"
+        return 1
+    fi
+    
+    echo "🌍 Creating/updating PO file for locale: $locale"
+    
+    local pot_file="$TEXTDOMAINDIR/$TEXTDOMAIN.pot"
+    local po_dir="$TEXTDOMAINDIR/$locale/LC_MESSAGES"
+    local po_file="$po_dir/$TEXTDOMAIN.po"
+    
+    if [ ! -f "$pot_file" ]; then
+        echo "✗ POT file not found: $pot_file"
+        echo "Run 'karen i18n makepot' first"
+        return 1
+    fi
+    
+    # Create locale directory
+    mkdir -p "$po_dir"
+    
+    if [ -f "$po_file" ]; then
+        # Update existing PO file
+        echo "Updating existing PO file..."
+        msgmerge --update "$po_file" "$pot_file"
+        echo "✓ Updated PO file: $po_file"
+    else
+        # Create new PO file
+        echo "Creating new PO file..."
+        msginit --input="$pot_file" --output-file="$po_file" --locale="$locale" --no-translator
+        # # Fix charset to UTF-8
+        # sed -i 's/charset=.*\\n/charset=UTF-8\\n/' "$po_file"
+        echo "✓ Created PO file: $po_file"
+    fi
+    
+    echo "Next: Edit $po_file and run 'karen i18n makemo $locale'"
+}
+
+i18n_makemo() {
+    local locale="$1"
+    if [ -z "$locale" ]; then
+        echo "Usage: karen i18n makemo <locale>"
+        echo "Examples: karen i18n makemo fr_FR"
+        echo "          karen i18n makemo es_ES"
+        return 1
+    fi
+    
+    echo "🌍 Compiling MO file for locale: $locale"
+    
+    local po_dir="$TEXTDOMAINDIR/$locale/LC_MESSAGES"
+    local po_file="$po_dir/$TEXTDOMAIN.po"
+    local mo_file="$po_dir/$TEXTDOMAIN.mo"
+    
+    if [ ! -f "$po_file" ]; then
+        echo "✗ PO file not found: $po_file"
+        echo "Run 'karen i18n makepo $locale' first"
+        return 1
+    fi
+    
+    # Compile PO to MO
+    msgfmt \
+        --output-file="$mo_file" \
+        --verbose \
+        "$po_file"
+    
+    if [ -f "$mo_file" ]; then
+        echo "✓ Compiled MO file: $mo_file"
+        echo "Translation is ready! Test with: LANGUAGE=$locale karen --help"
+    else
+        echo "✗ Failed to compile MO file"
+        return 1
+    fi
+}
+
+# Main i18n dispatcher function
+i18n() {
+    case "${1:-}" in
+        makepot)
+            i18n_makepot
+            ;;
+        makepo)
+            i18n_makepo "${2:-}"
+            ;;
+        makemo)
+            i18n_makemo "${2:-}"
+            ;;
+        info)
+            i18n_info
+            ;;
+        *)
+            echo "Usage: karen i18n <command> [options]"
+            echo
+            echo "Commands:"
+            echo "  makepot           Extract strings and create/update POT file"
+            echo "  makepo <locale>   Create or update PO file for locale"
+            echo "  makemo <locale>   Compile PO file to MO file"
+            echo "  info              Show i18n configuration"
+            echo
+            echo "Workflow:"
+            echo "  1. karen i18n makepot          # Extract translatable strings"
+            echo "  2. karen i18n makepo fr_FR     # Create French translation file"
+            echo "  3. Edit locale/fr_FR/LC_MESSAGES/karen.po"
+            echo "  4. karen i18n makemo fr_FR     # Compile to binary format"
+            echo "  5. LANGUAGE=fr_FR karen --help # Test translation"
+            ;;
+    esac
+}
+
+log processed $BASH_SOURCE

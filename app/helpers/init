@@ -22,7 +22,8 @@ init_base=$(dirname $(dirname $init_helpers))
 # Loading default parameters
 . $init_helpers/defaults
 
-# . $init_helpers/gettext || end 1 Could not load gettext
+# Loading gettext support
+. $init_helpers/gettext
 
 # From now on, legit KAREN_* are available
 

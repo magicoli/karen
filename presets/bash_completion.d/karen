@@ -9,7 +9,7 @@ _karen() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
     # Main Karen commands
-    local commands="help php caddy apache"
+    local commands="help php caddy apache i18n"
     
     # Options
     local global_opts="--help --version"
@@ -36,6 +36,10 @@ _karen() {
                 #     ;;
                 caddy|apache|php)
                     COMPREPLY=( $(compgen -W "${env_modes} --help" -- ${cur}) )
+                    return 0
+                    ;;
+                i18n)
+                    COMPREPLY=( $(compgen -W "makepot makepo makemo info --help" -- ${cur}) )
                     return 0
                     ;;
                 help)

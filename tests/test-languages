@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -euo pipefail
+
+PGM=$(realpath "$0")
+PGMDIR=$(realpath $PGM)
+KAREN_BASE=${PGM%/*/*}
+
+languages=$(ls -d $KAREN_BASE/locale/*/ | while read dir; do basename $dir; done)
+echo Installed languages: $languages
+
+echo
+echo Generating pot
+karen i18n makepot
+file -i $KAREN_BASE/locale/*.pot
+for lang in $languages; do
+    echo
+    echo Updating $lang po
+    karen i18n makepo $lang
+    file -i $KAREN_BASE/locale/*/*/*.po
+done
+
+for lang in $languages; do
+    echo
+    echo Updating $lang mo
+    karen i18n makemo $lang
+    file -i $KAREN_BASE/locale/*/*/*.mo
+done
+
+echo
+
+echo Testing without forcing lang
+karen || true
+
+for lang in $languages fr_FR fr_FR.UTF-8; do
+    echo Testing lang $lang
+    LANGUAGE=$lang karen || true
+done

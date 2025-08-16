@@ -1,0 +1,81 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Karen Project
+# This file is distributed under the same license as the Karen package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Karen 1.0.0\n"
+"Report-Msgid-Bugs-To: bugs@magiiic.com\n"
+"POT-Creation-Date: 2025-08-16 08:18+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: /opt/magic/etc/karen/karen:40
+msgid "Simple string"
+msgstr ""
+
+#: /opt/magic/etc/karen/karen:42
+msgid "Expanded string with %s"
+msgstr ""
+
+#: /opt/magic/etc/karen/karen:47 /opt/magic/etc/karen/karen:49
+#: /opt/magic/etc/karen/karen:51
+msgid "Singular string"
+msgid_plural "Plural strings"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /opt/magic/etc/karen/karen:53 /opt/magic/etc/karen/karen:55
+msgid "%s string with expansion"
+msgid_plural "%s strings with expansion"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /opt/magic/etc/karen/karen:57 /opt/magic/etc/karen/karen:61
+msgctxt "Clothing"
+msgid "String in context"
+msgstr ""
+
+#: /opt/magic/etc/karen/karen:59 /opt/magic/etc/karen/karen:63
+msgctxt "Characters"
+msgid "String in context"
+msgstr ""
+
+#: /opt/magic/etc/karen/karen:65
+msgctxt "Clothing"
+msgid "Expanded in context: %s"
+msgstr ""
+
+#: /opt/magic/etc/karen/karen:67 /opt/magic/etc/karen/karen:69
+msgctxt "Cart"
+msgid "One item (ctx)"
+msgid_plural "Many items (ctx)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /opt/magic/etc/karen/karen:71 /opt/magic/etc/karen/karen:73
+msgctxt "Cart"
+msgid "%s item (ctx)"
+msgid_plural "%s items (ctx)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /opt/magic/etc/karen/karen:75
+msgid "marked string"
+msgstr ""
+
+#: /opt/magic/etc/karen/app/helpers/gettext:265
+msgid "--version"
+msgstr ""
+
+#: /opt/magic/etc/karen/app/helpers/utils:76
+msgid "Usage: %s [COMMAND] [OPTIONS]"
+msgstr ""

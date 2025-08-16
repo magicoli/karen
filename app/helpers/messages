@@ -35,8 +35,14 @@ system_message() {
     local tag="$1"
     
     if [[ -n "${SYSTEM_MESSAGES[$tag]:-}" ]]; then
-        echo "${SYSTEM_MESSAGES[$tag]}"
+        local message="${SYSTEM_MESSAGES[$tag]}"
+        # Translate the message if gettext is available
+        if command -v _ >/dev/null 2>&1; then
+            _ "$message"
+        else
+            printf "%s" "$message"
+        fi
     else
-        echo "$tag"
+        printf "%s" "$tag"
     fi
 }

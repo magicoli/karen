@@ -1,0 +1,105 @@
+# French translations for Karen package
+# Traductions françaises du paquet Karen.
+# Copyright (C) 2025 Karen Project
+# This file is distributed under the same license as the Karen package.
+# Automatically generated, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Karen 1.0.0\n"
+"Report-Msgid-Bugs-To: bugs@magiiic.com\n"
+"POT-Creation-Date: 2025-08-16 08:18+0200\n"
+"PO-Revision-Date: 2025-08-16 04:14+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: /opt/magic/etc/karen/karen:40
+msgid "Simple string"
+msgstr "Chaîne simple (fr)"
+
+#: /opt/magic/etc/karen/karen:42
+msgid "Expanded string with %s"
+msgstr "Chaîne étendue avec %s"
+
+#: /opt/magic/etc/karen/karen:47 /opt/magic/etc/karen/karen:49
+#: /opt/magic/etc/karen/karen:51
+msgid "Singular string"
+msgid_plural "Plural strings"
+msgstr[0] "Chaîne singulière"
+msgstr[1] "Chaînes plurielles"
+
+#: /opt/magic/etc/karen/karen:53 /opt/magic/etc/karen/karen:55
+msgid "%s string with expansion"
+msgid_plural "%s strings with expansion"
+msgstr[0] "%s string avec expansion"
+msgstr[1] "%s strings avec expansion"
+
+#: /opt/magic/etc/karen/karen:57 /opt/magic/etc/karen/karen:61
+msgctxt "Clothing"
+msgid "String in context"
+msgstr "Slip quand c'est un vêtement"
+
+#: /opt/magic/etc/karen/karen:59 /opt/magic/etc/karen/karen:63
+msgctxt "Characters"
+msgid "String in context"
+msgstr "Chaîne quand ce sont des caractères"
+
+#: /opt/magic/etc/karen/karen:65
+msgctxt "Clothing"
+msgid "Expanded in context: %s"
+msgstr "Chaîne étendue dans le contexte : %s"
+
+#: /opt/magic/etc/karen/karen:67 /opt/magic/etc/karen/karen:69
+msgctxt "Cart"
+msgid "One item (ctx)"
+msgid_plural "Many items (ctx)"
+msgstr[0] "Un article (ctx)"
+msgstr[1] "Plusieurs articles (ctx)"
+
+#: /opt/magic/etc/karen/karen:71 /opt/magic/etc/karen/karen:73
+msgctxt "Wishlist"
+msgid "One item (ctx)"
+msgid_plural "Many items (ctx)"
+msgstr[0] "Un souhait (ctx)"
+msgstr[1] "Plusieurs souhaits (ctx)"
+
+#: /opt/magic/etc/karen/karen:71 /opt/magic/etc/karen/karen:73
+msgctxt "Cart"
+msgid "%s item (ctx)"
+msgid_plural "%s items (ctx)"
+msgstr[0] "%s article (ctx)"
+msgstr[1] "%s articles (ctx)"
+
+#: /opt/magic/etc/karen/karen:75 /opt/magic/etc/karen/karen:77
+msgctxt "Wishlist"
+msgid "%s item (ctx)"
+msgid_plural "%s items (ctx)"
+msgstr[0] "%s souhait (ctx)"
+msgstr[1] "%s souhaits (ctx)"
+
+#: /opt/magic/etc/karen/karen:75
+msgid "marked string"
+msgstr "chaîne marquée"
+
+#: /opt/magic/etc/karen/app/helpers/gettext:265
+msgid "--version"
+msgstr ""
+
+#: /opt/magic/etc/karen/app/helpers/utils:76
+msgid "Usage: %s [COMMAND] [OPTIONS]"
+msgstr "Utilisation : %s [COMMANDE] [OPTIONS]"
+
+#~ msgctxt "Context"
+#~ msgid "String in context _c"
+#~ msgstr "Chaîne dans le contexte"
+
+#~ msgid "Karen - Server Configuration Management Tool"
+#~ msgstr "Karen - Outil de gestion de configuration serveur"
+
+#~ msgid "other string"
+#~ msgstr "autre chaîne"
