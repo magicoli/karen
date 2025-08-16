@@ -1,0 +1,13 @@
+composer global require dealerdirect/phpcodesniffer-composer-installer:"^0.7" phpcompatibility/phpcompatibility-wp:"*"
+composer global require wp-coding-standards/wpcs
+ln -s ~/.config/composer/vendor/bin/phpcs ~/bin/
+ln -s ~/.config/composer/vendor/bin/phpcbf ~/bin/
+
+echo 'Examples
+
+phpcs -p .  --standard=WordPress --ignore="$PWD/lib/*"
+find * -iname "*.php" | egrep -v "^(vendor/|lib/)" | xargs phpcbf --standard=WordPress
+
+phpcs -p . --standard=PHPCompatibilityWP
+
+'

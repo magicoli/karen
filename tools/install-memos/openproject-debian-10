@@ -1,0 +1,8 @@
+sudo apt-get update \
+&& sudo apt-get install apt-transport-https ca-certificates wget\
+&& wget -qO- https://dl.packager.io/srv/opf/openproject/key | sudo apt-key add - \
+&& sudo wget -O /etc/apt/sources.list.d/openproject.list \
+  https://dl.packager.io/srv/opf/openproject/stable/13/installer/debian/10.repo \
+&& sudo apt-get update \
+&& sudo apt-get install openproject \
+&& sudo openproject reconfigure

@@ -1,0 +1,50 @@
+#!/bin/sh
+
+for module in pathauto transliteration
+do
+    drush pm-info $module 2>/dev/null | egrep -q "Status.*:.*enabled" || {
+	echo "missing module $module, trying to enable it"
+	drush en $module module || exit 1
+    }
+done
+
+echo "
+file_temporary_path ../tmp
+
+update_check_disabled 0
+update_check_frequency 7
+update_notification_threshold security
+
+live_css_fontsize 12px
+live_css_hideadmin 1
+live_css_hidemodules 1
+live_css_less 0
+live_css_softtabs 1
+live_css_storage 1
+live_css_tabsize 2
+live_css_theme clouds
+
+fb_api_file profiles/magic/libraries/facebook-php-sdk/src/facebook.php
+pathauto_node_pattern [node:menu-link:parent]/[node:title]
+pathauto_node_article_pattern news/[node:menu-link:parent]/[node:title]
+pathauto_reduce_ascii 1
+pathauto_taxonomy_term_pattern [term:vocabulary]/[term:parents:join-path]/[term:name]
+pathauto_taxonomy_term_tags_pattern [term:parents:join-path]/[term:name]
+pathauto_transliterate 1
+" | while read param value
+do
+    [ ! "$param" ] && continue
+    current=$(
+	drush vget $param 2>/dev/null \
+	    | cut -d " " -f 2 \
+	    | sed "s/\"\(.*\)\"$/\\1/"
+    )
+    [ "x$current" = "x$value" ] && continue
+    echo "$param: $current (change)"
+    drush vset --yes $param "$value"
+done
+
+drush vdel update_notify_emails
+
+exit
+

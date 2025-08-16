@@ -1,0 +1,25 @@
+#!/bin/sh
+
+PGM=`basename $0`
+TMP=/tmp/$basename.$$
+
+cat $@ > $TMP.input
+
+grep "@" $TMP.input|grep -v "^Message-ID"|while read line
+   do	
+   for word in $line
+     do
+     [ "$lastmail" ] && notamail=`echo $word|egrep -v "@|:$"`
+     amail=`echo $word|grep "@"|sed "s/[^-a-zA-Z0-9_.@]//g"`
+     if [ "$amail" ]
+	 then
+	 [ "$lastmail" ] && printf " $notamail\n"
+	 printf "$amail\t$previous"
+	 lastmail=$amail
+     else
+	 [ "$lastmail" ] && printf " $notamail"
+     fi
+     previous=$notamail
+     done
+   done
+printf "\n"

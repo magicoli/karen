@@ -1,0 +1,10 @@
+#!/bin/sh
+
+echo "Initial settings:" \
+    `defaults read com.apple.mail NSPreferredMailCharset`
+
+defaults write com.apple.mail NSPreferredMailCharset UTF-8 >/dev/null 2>/dev/null \
+    && echo "Changed to:" `defaults read com.apple.mail NSPreferredMailCharset`\
+    || echo "Unchanged..." `defaults read com.apple.mail NSPreferredMailCharset`
+
+

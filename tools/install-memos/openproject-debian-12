@@ -1,0 +1,10 @@
+sudo apt update \
+&& sudo apt install apt-transport-https ca-certificates wget \
+&& sudo wget -qO- https://dl.packager.io/srv/opf/openproject/key \
+| gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/packager-io.gpg \
+&& sudo wget -O /etc/apt/sources.list.d/openproject.list \
+  https://dl.packager.io/srv/opf/openproject/stable/13/installer/debian/12.repo \
+&& sudo apt update \
+&& sudo apt install openproject \
+&& sudo openproject reconfigure \
+|| echo "error $? $_"

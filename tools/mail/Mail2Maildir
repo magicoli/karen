@@ -1,0 +1,167 @@
+#!/bin/bash
+## Fix 2
+
+cd /Users/magic/Library/Mail/V2/Moved
+count=$(echo $(cat ~/Mail2Maildir.notfound | wc -l))
+resent=$(echo $(cat ~/Mail2Maildir.resent | wc -l))
+echo "count: $count ($resent resent)"
+i=0
+cat ~/Mail2Maildir.notfound  | while read file
+do
+	printf "\r\33[2K"
+	filename=$(basename "$file")
+	i=$(($i + 1))
+	printf "$filename ($i/$count) "
+	grep -q "$file" ~/Mail2Maildir.resent && printf "found" && continue
+	printf "sync "
+	remote=root@hal:~magic-van-helden.net/Maildir/.${file/\.mbox.*/}/tmp
+#	printf "$file "
+	rsync -Waz "$file" $remote/ && echo "$file" >> ~/Mail2Maildir.resent && echo "ok" || echo "$file" >> ~/Mail2Maildir.resend-error
+done
+echo
+
+exit
+
+###
+## Fix
+
+remote=root@hal:~magic-van-helden.net/Maildir
+moved=~/Library/Mail/V2/Moved
+owner=magic-van-helden.net:magic
+
+PGM=$(basename "$0")
+TMP=/tmp/$PGM
+LOG=~/$PGM
+
+cd $moved
+remotehost=$(echo $remote | grep ":" | cut -d ":" -f 1)
+remotepath=$(echo $remote | grep ":" | cut -d ":" -f 2-)
+
+ls | while read localfolder
+do
+	[ ! -d "$localfolder" ] && continue
+	remotefolder=.$(echo $localfolder | sed "s/.mbox.*//")
+	find $moved/$localfolder/Data -name Messages 2>/dev/null > $TMP.fix
+	count=$(echo $(cat $TMP.fix 2>/dev/null | wc -l))
+	[ $count -gt 0 ] || continue
+	echo "$remotefolder ($count)"
+	cat $TMP.fix | while read subfolder
+	do
+		report=$(echo "$subfolder > $remotefolder/tmp/" | sed "s|.*/Data/|   Data/|")
+		printf "$report "
+		grep -q "^$subfolder$" $LOG.done && echo "(done)" && continue
+		ssh $remotehost mkdir -p "$remotepath/$remotefolder/new" || break
+		rsync -Waz "$subfolder/" $remote/$remotefolder/tmp/ && {
+			printf "synced "
+			ssh $remotehost "mv $remotepath/$remotefolder/tmp/*emlx* $remotepath/$remotefolder/new/" || break
+			echo "$subfolder" >> $LOG.done
+			echo "ok"
+		} || echo "$?"
+	done
+done
+
+echo "$PGM: fixing global owner"
+ssh $remotehost chown -R magic-van-helden.net:magic $remotepath
+echo "$PGM: fixing global permissions"
+ssh $remotehost chmod -R go-rwx $remotepath
+
+exit
+
+###
+## First step
+
+PGM=$(basename $0)
+TMP=$PGM
+
+SPC=$(echo $PGM | sed "s/./ /g")
+
+[ ! $2 ] && echo usage: $PGM source dest && exit 1
+
+source=$1
+dest=$(echo $2 | sed "s:/*$::")
+remotehost=$(echo $dest | grep ":" | cut -d ":" -f 1)
+remotepath=$(echo $dest | grep ":" | cut -d ":" -f 2-)
+# mkdir -p $dest || exit 3
+# cd $dest && dest=$PWD || exit 4
+# cd $OLDPWD
+
+cd $source && source=$PWD || exit 2
+moved=$(dirname "$source")/Moved
+mkdir -p "$moved" || exit 3
+
+echo "$PGM: source $source"
+echo "$PGM: dest   $dest"
+echo "$PGM:        $remotehost"
+echo "$PGM:        $remotepath"
+
+TMP=$source/.$PGM
+
+echo "$PGM: checking connection"
+
+mkdir "/tmp/$PGM-$$-testfolder/"
+rsync -Waz "/tmp/$PGM-$$-testfolder/" $dest/ || {
+	rmdir "/tmp/$PGM-$$-testfolder/"
+	exit 5
+}
+rmdir "/tmp/$PGM-$$-testfolder/"
+
+if [ ! -f "$TMP".list ] 
+	then
+	echo "$PGM: building messages list"
+	find * -iname "*.emlx" > "$TMP.list"
+fi
+
+msgcount=$(cat $TMP.list | wc -l | sed "s/^ *//")
+echo "$PGM: $msgcount messages"
+
+if [ ! -f "$TMP.folders" ]
+	then
+	cat $TMP.list | sed "s|/[^/]*$||" | sort -u > "$TMP.folders"
+fi
+
+foldercount=$(cat $TMP.folders | wc -l | sed "s/^ *//")
+f=0
+for workaround in $(cat $TMP.folders | sed "s/ /:/g")
+do
+	folder=$(echo "$workaround" | sed "s/:/ /g")
+	f=$(($f + 1))
+	cleanfolder=$(echo $folder | sed "s:[A-F0-9/-]*/Data/.*::" | sed "s/.mbox//g")
+	[ ! -d "$folder" ] && echo "$PGM: $cleanfolder (Already moved)" && continue
+	echo "$PGM: $cleanfolder"
+	echo "$SPC  folder $f of $foldercount"
+	remotefolder=.Archives$(
+	echo "$folder" \
+		| sed "s:\([^\./]*\)\.mbox/:.\\1/:g" \
+		| sed "s:/[^\./][^/]*::g" \
+		| sed "s:/::g" \
+		| sed "s:[())]::g" \
+		| sed "s:  *:_:g"
+	)
+	echo "$SPC  checking remote folder"
+	ssh $remotehost mkdir -p "$remotepath/$remotefolder" || exit 6
+
+	thiscount=$(find "$folder" -name "*.emlx" | wc -l)
+	echo "$SPC  syncing" $thiscount messages
+	rsync -Waz "$folder"/ $dest/$remotefolder/new/ --exclude ".*" || exit 7
+
+	echo "$SPC  fixing folder owner"
+	ssh $remotehost chown -R magic-van-helden.net:magic "$remotepath/$remotefolder"
+	echo "$SPC  fixing folder permissions"
+	ssh $remotehost chmod -R go-rwx "$remotepath/$remotefolder"
+
+	undottedfolder=$(echo $remotefolder | sed "s/^\.//")
+	echo "$SPC  subscribing to mailbox"
+	ssh $remotehost "grep -q "^$undottedfolder$" $remotepath/subscriptions || echo $undottedfolder >> $remotepath/subscriptions"
+	basefolder=$(echo "$folder" | sed "s:/Data/.*::")
+	folderid=$(basename "$basefolder")
+	movedfolder=$moved/$undottedfolder.mbox.$folderid
+	echo "$SPC  move procesed folder to $movedfolder"
+	mv "$basefolder" "$movedfolder"
+done
+
+echo
+
+echo "$PGM: fixing global owner"
+ssh $remotehost chown -R magic-van-helden.net:magic $remotepath
+echo "$PGM: fixing global permissions"
+ssh $remotehost chmod -R go-rwx $remotepath

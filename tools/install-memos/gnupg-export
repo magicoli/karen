@@ -1,0 +1,2 @@
+gpg2 --export-secret-keys
+gpg2 --import /path/to/secret.gpg

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# see https://pytorch.org
+
+sudo apt install wget git python3 python3-venv libgl1 libglib2.0-0
+
+pip install --upgrade pip
+pip install --upgrade setuptools
+
+# Make sure Python version is 3.10+
+git clone https://github.com/openvinotoolkit/stable-diffusion-webui.git
+cd stable-diffusion-webui
+python -m venv sd_env
+source sd_env/bin/activate
+
+# Fix Could not find a version that satisfies the requirement setuptools>=40.8.0
+#   https://github.com/AUTOMATIC1111/stable-diffusion-webui/discussions/9473
+#   https://github.com/d8ahazard/sd_dreambooth_extension/releases/tag/1.0.13
+# but I used nightly/cpu instead of whl/cu118
+pip install --force-reinstall --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cpu
+pip install --force-reinstall --no-deps --pre xformers
+
+# Fix git error cloning CodeFormer
+git clone https://github.com/sczhou/CodeFormer.git repositories/CodeFormer
+
+# Add --skip-python-version-check to your launch script to skip console warnings
+export PYTORCH_TRACING_MODE=TORCHFX
+export COMMANDLINE_ARGS="--skip-python-version-check --skip-torch-cuda-test --precision full --no-half"
+# Recommandation from https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/6773#issuecomment-1383257728
+# --no-half --lowvram
+
+# Launch the WebUI
+./webui.sh

@@ -1,0 +1,106 @@
+#!/bin/sh
+#
+# Check available servers from those defined in .fetchmailrc and fetch
+# corresponding mails
+
+PID=$$
+PGM=`basename $0`
+TMP=~/.$PGM.$PID
+touch $TMP
+STDERR="/dev/null"
+STDOUT="$TMP.OUT"
+touch $STDOUT
+tail -f $STDOUT --pid=$PID 2>/dev/null &
+
+help() {
+    usage
+    echo
+    echo "	-d debug mode"
+    echo "	-q quiet mode"
+    exit 0
+}
+
+usage() {
+    echo "usage: $PGM [-qc] mailserver1 mailserver2 ..."
+}
+
+for PARAM in $@
+do
+    case $PARAM in
+	--help)
+		help
+		;;
+	--*)
+		      echo unknown parameter $PARAM
+		      ERROR=1
+		      ;;
+	-*)
+	    for PARAM in `echo $PARAM|sed "s/-//g"|sed "s/\(.\)/ \1/g"`
+	    do
+	      case $PARAM in
+		h)
+		    help
+		    ;;
+		d)
+#		    echo "Debug mode"
+		    STDERR="&1"
+		    ;;
+		q)
+#                   quiet mode
+		    STDOUT="/dev/null"
+	            ;;
+		*)
+		      echo unknown parameter -$PARAM
+		      ERROR=1
+	      esac
+	    done
+	    ;;    
+	*)
+	    VALUES="$VALUES $PARAM"
+	    LASTVAL=$PARAM
+    esac
+done
+
+if [ $ERROR ]
+then
+    usage
+    echo "   type '$PGM --help' for more info"
+    rm -f $TMP*
+    exit $ERROR
+fi
+
+(
+case $LASTVAL in
+    help)
+	help
+	exit 0
+	;;
+esac
+
+if [ "$FALSE" ]
+then
+    echo "another fetchmail process in active. Exiting..."
+    ERROR=2
+    exit 2
+else
+    for MAILHOST in `grep "^poll" ~/.fetchmailrc |cut -d " " -f 2; echo $VALUES`
+    do
+      echo -n $MAILHOST
+      ping -qc 1 -w 1 $MAILHOST >/dev/null \
+	  && ( echo "... present, checking"; fetchmail $MAILHOST ) \
+	  || echo "... unreachable, skipping"
+    done
+fi
+
+) 2>$STDERR >$STDOUT
+
+sleep 1
+
+
+#if [ $TAILTOKILL ]
+#then
+#    kill $TAILTOKILL &>/dev/null
+#    echo
+#fi
+
+rm -f $TMP*

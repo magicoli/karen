@@ -1,0 +1,34 @@
+#!/bin/bash
+
+sudo apt install ubuntustudio-controls
+
+# # Method for Ubuntu 20.04
+# # https://papilinux.fr/un-noyau-rt-pour-utilister-ardour
+#
+# sudo apt install alsaplayer-jack jack-delay jack-rack jack-stdio jackmeter
+#
+# sudo apt-get install apt-transport-https gpgv
+# sudo dpkg --purge kxstudio-repos-gcc5
+# wget https://launchpad.net/~kxstudio-debian/+archive/kxstudio/+files/kxstudio-repos_10.0.3_all.deb
+# sudo dpkg -i kxstudio-repos_10.0.3_all.deb
+
+# # Tried and didn't help
+# # https://ardour.org/jack-n-pulse.html
+#
+# PGM=$(basename $0)
+# TMP=/tmp/$PGM.$$
+#
+# echo "See https://ardour.org/jack-n-pulse.html for more details"
+#
+# grep -q snd-aloop /etc/modules || echo snd-aloop | sudo tee -a /etc/modules
+# sudo modprobe snd-aloop
+#
+# echo 'pcm.jca {
+#   type hw
+#   card Loopback
+#   device 1
+#   subdevice 0
+#   hint { description "JACK can receive from ALSA applications here" }
+# }' > $TMP.asoundrc
+#
+# [ -f ~/.asoundrc ] && echo  ~/.asoundrc exists, check its contents && echo "It should be something like" && cat $TMP.asoundrc

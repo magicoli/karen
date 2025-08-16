@@ -1,0 +1,9 @@
+for LRFILE in $@
+do
+	cat $LRFILE | cut -f 1 | grep @ > $LRFILE.tmp
+	cat $LRFILE | cut -f 2 | grep @ >> $LRFILE.tmp
+	cat $LRFILE | cut -f 3 | grep @ >> $LRFILE.tmp
+	cat $LRFILE | cut -f 4 | grep @ >> $LRFILE.tmp
+	sort -u $LRFILE.tmp > $LRFILE.mailman 
+	echo $LRFILE converted - `grep -c "" $LRFILE.mailman` addresses
+done

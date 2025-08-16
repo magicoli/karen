@@ -1,0 +1,10 @@
+#!/bin/sh
+
+egrep -v "van-helden.net|magicoli69@gmail.com|@[a-z\.]*spekuloos.be|@localhost" "$@" \
+    | egrep "[a-z0-9\._-]*@[a-z0-9\._-]*\.[a-z0-9\._-]*"  \
+    | sed "s/.*[ :<'\";<({]\([a-z0-9\._-]*@\)/\\1/" \
+    | sed "s/[)>\"}\\\\].*//" \
+    | sed "s/\.\.\. .*//" \
+    | sort -u \
+    | egrep "[a-z0-9\._-]*@[a-z0-9\._-]*\.[a-z0-9\._-]*"
+

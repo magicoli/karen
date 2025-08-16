@@ -1,0 +1,30 @@
+#!/bin/sh
+
+EXCLUDE="[0-9]@my.booking|creditcontrol.gp@booking.com|customer.service@booking.com|@paypal"
+
+PGM=$(basename "$0")
+TMP=/tmp/$PGM.$$
+
+source=$1
+dest=$2
+
+[ ! "$dest" ] && echo "usage: $PGM source.csv destination" >&2 && exit 1
+
+printf "" > $TMP.mails
+cat "$source" \
+	| cut -d "," -f 3- | sed "s/,,*/ /g" \
+	| sed "s/^ *\(.*\)  *\([^ ]*@[^ ]*\).*/\\2 \\1/" \
+	| sort -u | grep "@[^ ]*\.[a-z]" \
+	| egrep -v "$EXCLUDE" \
+	| sort -u | sort -r \
+	| while read mail name
+do
+	mail=$(echo "$mail" | tr "[:upper:]" "[:lower:]")
+	name=$(echo "$name" | sed "s/$mail//")
+	grep -q "<$mail>" $TMP.mails && continue
+	echo "<$mail> $name" >> $TMP.mails 
+done
+
+cat $TMP.mails | sed "s/ *$//" | sort -u > "$dest"
+
+rm -f $TMP.*

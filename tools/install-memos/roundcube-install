@@ -1,0 +1,5 @@
+# for debian 10
+
+apt-get install apache2 mariadb-server mariadb-client
+apt-get install php php-common php-curl php-mysql php-mbstring
+apt-get install php-intl php-imagick php-pear php-ldap php-json php-xml

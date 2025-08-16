@@ -1,0 +1,37 @@
+sudo apt install netatalk avahi-daemon
+sudo useradd --no-create-home your-username
+sudo mkdir /srv/timemachine
+sudo chown your-username:your-usergroup /srv/timemachine
+
+# replace your-username and your-usergroup with the username of your choice, and /srv/timemachine with the folder of your choice
+
+# edit  /etc/netatalk/afp.conf
+
+cat << EOF
+;
+; Netatalk 3.x configuration file
+;
+ 
+[Global]
+hostname = your-hostname
+ 
+[TimeMachine]
+path = /srv/timemachine
+time machine = yes
+valid users = your-username
+vol size limit = 700000
+EOF
+
+read -p "edit /etc/netatalk/afp.conf"
+
+# The vol size limit is set in MB, so 700000 will be 700 GB. Use at least as much space as your Mac disk has. Double the space is recommended to keep a history of file changes.
+
+sudo systemctl enable avahi-daemon
+sudo systemctl start avahi-daemon
+sudo systemctl enable netatalk
+sudo systemctl start netatalk
+
+sudo ufw allow 548
+sudo ufw allow 427
+sudo ufw allow 4700
+sudo systemctl restart netatalk

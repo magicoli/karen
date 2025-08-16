@@ -1,0 +1,94 @@
+#!/bin/bash
+
+PGM=$(basename $0)
+export PATH=$(dirname $0):$PATH
+
+[ ! "$BIND" ] && BIND=no
+
+TMP=/tmp/$PGM.$$
+CACHE=/tmp/$PGM
+
+touch $TMP.list
+(
+  echo $@ | tr " " "\n"
+  [ -f ~/.$PGM.watchlist ] && cat ~/.$PGM.watchlist
+  [ "$BIND" = "yes" ] && list-local-domains 2>/dev/null | cut -f 1
+) | while read domain
+do
+  grep -q "^$domain$" $TMP.list && continue
+  echo $domain >> $TMP.list
+done
+
+grep "[a-z]" $TMP.list | while read domain
+do
+  touch $CACHE.$domain
+  tld=`echo "$domain" | sed "s/.*\.//"`
+  whois $domain >$TMP.whois 2>&1
+  # cat $TMP.whois | sed "s/^/WHOIS /"
+  cat $TMP.whois | sanitize-whois $domain > $TMP.check
+  # cat $TMP.check | sed "s/^/CHECK /"
+
+  diff $CACHE.$domain $TMP.check >$TMP.diff && continue
+
+  # if grep -q . $TMP.whois
+  # then
+    rm -f $CACHE.errors.$domain
+    mv $TMP.check $CACHE.$domain
+    printf "$domain " >> $TMP.changed
+
+    (
+    echo "records for domain $domain have changed"
+    echo
+    echo '---------------------------------------'
+    cat $TMP.diff
+    echo '---------------------------------------'
+    cat $TMP.whois
+    echo "======================================="
+    echo
+    ) >> $TMP.report
+  # else
+  #   echo "$(date) $domain" >> $CACHE.errors.$domain
+  #   echo "whois $domain result empty" >> $TMP.errors
+  #   continue
+  # fi
+
+done
+
+if [ -f $TMP.report -o -f $TMP.errors ]
+then
+  [ "$MAILTO" ] && mailto=$MAILTO || mailto=$(whoami)@$(hostname -f)
+
+  if [ -f $TMP.changed ]
+  then
+    subject="Changes detected for $(echo $(cat $TMP.changed))"
+  fi
+
+  if [ -f $TMP.errors ]
+  then
+    [ "$subject" ] && subject="$subject, "
+    subject="$subject$(cat $TMP.errors | wc -l) empty results"
+    (
+    cat $TMP.errors
+    [ -f $TMP.report ] && echo && cat $TMP.report
+    ) > $TMP.fullreport
+    mv $TMP.fullreport $TMP.report
+  fi
+
+  if [ -t 1 ]
+  then
+    cat $TMP.report
+  elif which mailx >/dev/null
+  then
+    (
+    echo "$subject"
+    echo
+    cat $TMP.report
+    ) | mailx -s "[$PGM] $subject" $mailto
+  else
+    echo "$PGM: $subject"
+    echo
+    cat $TMP.report
+  fi
+fi
+
+rm -f $TMP.*

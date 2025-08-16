@@ -1,0 +1,12 @@
+#!/bin/bash
+
+THRESOLD=5
+
+cd /var/spool/postfix/
+for folder in def*
+do
+    count=$(find $folder -type f | wc -l)
+    [ $count -lt $THRESOLD ] && continue
+    printf "$folder\t$count\n"
+    rm -f $folder/*/*
+done

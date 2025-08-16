@@ -1,0 +1,27 @@
+#!/bin/sh
+
+for MAIL in $@
+do
+	GROUP=popusers
+	HOMEPATH=/home/popusers
+	SHELL=/bin/false
+
+#	DOMAIN=`echo $MAIL | cut -d "@" -f 2`
+	PREFIX="gima"
+	LASTID=$((`egrep "^$PREFIX[0-9]" /etc/passwd | \
+		sed "s/$PREFIX\([0-9]*\):.*/\\1/" | \
+		sort -n | tail -n 1`+1))
+#	FILLZEROES=$((8-${#LASTID}-${#PREFIX}))
+	FILLZEROES=000
+	LOGIN=$PREFIX$FILLZEROES$LASTID
+	PASSWORD=`randompassword` 
+	MD5=`echo $PASSWORD | md5sum | cut -d " " -f 1`
+	echo $MAIL
+	useradd $LOGIN -g $GROUP -d $HOMEPATH/$LOGIN -s /bin/false -c $MAIL && echo " Created" || echo " Error"
+	echo "   login: $LOGIN"
+	echo "   password: $PASSWORD"
+	passwd $LOGIN
+	echo "$MAIL $LOGIN" >> /etc/mail/virtusertable
+	echo
+done
+#/usr/bin/makemap hash /etc/mail/virtusertable </etc/mail ???

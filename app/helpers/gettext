@@ -8,7 +8,7 @@
 
 log starting $BASH_SOURCE
 
-log "LANGUAGE (initial) $LANGUAGE"
+# log "LANGUAGE (initial) $LANGUAGE"
 # Helper: detect whether an env var was passed specifically for this process
 # by comparing current env to parent process env (/proc/$PPID/environ).
 # Returns 0 if the variable exists in current env but not in parent env (treated as explicit).

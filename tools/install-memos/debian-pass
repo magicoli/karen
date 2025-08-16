@@ -1,0 +1,9 @@
+apt update
+apt install pass
+gpg --gen-key
+pass init "Real Name <email>"
+pass git init
+pass git remote add origin server:path/
+gpg --export-secret-keys > pass-keys.gpg
+scp pass-keys.gpg server:
+ssh server pass --import pass-keys.gpg

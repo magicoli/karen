@@ -1,0 +1,27 @@
+#!/bin/bash
+
+PROCEED=yes
+DEBUG=yes
+
+PATH=$(dirname "$0"):$PATH
+. $(which helpers) || exit 1
+
+
+ls -d /etc/letsencrypt/live/* | while read certfolder
+do
+  [ -d "$certfolder" ] || continue
+  certname=$(basename $certfolder)
+  echo "$certname" >&2
+  cont=no
+  for file in /etc/apache2/sites-enabled/*.conf /etc/postfix/main.cf /etc/dovecot/dovecot.conf
+  do
+    [ -e "$file" ] || continue
+    egrep -q "^[^#]*$certfolder/" "$file" && echo "    used in $file" >&2 && cont=yes
+  done
+  [ "$cont" = "yes" ] && continue
+
+  echo "  NOT IN USE, deleting" >&2
+  certbot delete --cert-name $certname && echo $certname >> $TMP.delete || echo "$certname delete failed $? " >> $TMP.delete
+done
+
+grep -q . $TMP.delete 2>/dev/null && echo && count=$(cat $TMP.delete | wc -l) && log 1 "$count certs deleted" && cat $TMP.delete | sed "s/^/    /"
