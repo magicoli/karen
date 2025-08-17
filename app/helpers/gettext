@@ -459,6 +459,145 @@ i18n_makeall() {
     echo "✓ POT and all PO files are up to date"
 }
 
+# ===== Docs (po4a) support for long texts =====
+
+_have_po4a() {
+    command -v po4a-gettextize >/dev/null 2>&1 && command -v po4a >/dev/null 2>&1
+}
+
+docs_list_sources() {
+    # README.md at project root, plus .md/.txt under app/doc (non-recursive and recursive)
+    local base="$KAREN_BASE"
+    [ -f "$base/README.md" ] && printf '%s\n' "$base/README.md"
+    if [ -d "$base/app/doc" ]; then
+        find "$base/app/doc" -type f \( -name '*.md' -o -name '*.txt' \) -print | sort
+    fi
+}
+
+docs_format_for_file() {
+    case "$1" in
+        *.md) echo "markdown" ;;
+        *.txt) echo "text" ;;
+        *) echo "text" ;;
+    esac
+}
+
+docs_slug_for_file() {
+    # Transform path to a stable slug for pot/po file names
+    local rel="${1#${KAREN_BASE}/}"
+    printf '%s' "${rel//\//_}"
+}
+
+locale_to_lang() {
+    # fr_FR -> fr; nl_NL -> nl; fr -> fr
+    printf '%s' "${1%%[_-]*}"
+}
+
+i18n_docs_makepot() {
+    if ! _have_po4a; then
+        echo "✗ po4a not found. Install package 'po4a' to process docs."
+        return 1
+    fi
+    local sources
+    sources=$(docs_list_sources)
+    [ -n "$sources" ] || { echo "(no docs found)"; return 0; }
+    local pot_root="$TEXTDOMAINDIR/docs"
+    mkdir -p "$pot_root"
+    local count=0
+    while IFS= read -r src; do
+        [ -n "$src" ] || continue
+        local fmt; fmt=$(docs_format_for_file "$src")
+        local slug; slug=$(docs_slug_for_file "$src")
+        local pot="$pot_root/${slug}.pot"
+        echo "📚 Extracting POT for $src -> $pot"
+        po4a-gettextize -f "$fmt" -m "$src" -p "$pot" -o "wrap-po=79" || return 1
+        count=$((count+1))
+    done <<< "$sources"
+    echo "✓ Created/updated $count POT file(s) under $pot_root"
+}
+
+i18n_docs_makepo() {
+    local locale="${1:-}"
+    if ! _have_po4a; then
+        echo "✗ po4a not found. Install package 'po4a' to process docs."
+        return 1
+    fi
+    if [ -z "$locale" ]; then
+        local any=0
+        for loc in $(i18n_list_locales); do
+            any=1
+            i18n_docs_makepo "$loc" || return 1
+        done
+        [ "$any" -eq 1 ] || echo "(no locales found under $TEXTDOMAINDIR)"
+        return 0
+    fi
+    local sources; sources=$(docs_list_sources)
+    [ -n "$sources" ] || { echo "(no docs found)"; return 0; }
+    local pot_root="$TEXTDOMAINDIR/docs"
+    local po_root="$TEXTDOMAINDIR/$locale/docs"
+    mkdir -p "$po_root"
+    local count=0
+    while IFS= read -r src; do
+        [ -n "$src" ] || continue
+        local slug; slug=$(docs_slug_for_file "$src")
+        local pot="$pot_root/${slug}.pot"
+        local po="$po_root/${slug%.pot}.po"
+        if [ ! -f "$pot" ]; then
+            echo "(missing POT for $src, running docs makepot)"
+            i18n_docs_makepot || return 1
+        fi
+        if [ -f "$po" ]; then
+            echo "Updating $po from $pot"
+            msgmerge --update "$po" "$pot" || return 1
+        else
+            echo "Creating $po"
+            msginit --input="$pot" --output-file="$po" --locale="$locale" --no-translator || return 1
+        fi
+        count=$((count+1))
+    done <<< "$sources"
+    echo "✓ Created/updated $count PO file(s) for $locale under $po_root"
+}
+
+i18n_docs_build() {
+    local locale="${1:-}"
+    if ! _have_po4a; then
+        echo "✗ po4a not found. Install package 'po4a' to build docs."
+        return 1
+    fi
+    if [ -z "$locale" ]; then
+        local any=0
+        for loc in $(i18n_list_locales); do
+            any=1
+            i18n_docs_build "$loc" || return 1
+        done
+        [ "$any" -eq 1 ] || echo "(no locales found under $TEXTDOMAINDIR)"
+        return 0
+    fi
+    local sources; sources=$(docs_list_sources)
+    [ -n "$sources" ] || { echo "(no docs found)"; return 0; }
+    local po_root="$TEXTDOMAINDIR/$locale/docs"
+    local count=0
+    local lang_short; lang_short=$(locale_to_lang "$locale")
+    while IFS= read -r src; do
+        [ -n "$src" ] || continue
+        local fmt; fmt=$(docs_format_for_file "$src")
+        local slug; slug=$(docs_slug_for_file "$src")
+        local po="$po_root/${slug}.po"
+        [ -f "$po" ] || { echo "(skip: missing $po; run 'karen i18n docs makepo $locale')"; continue; }
+        local dir base ext
+        dir=$(dirname "$src")
+        base=$(basename "$src")
+        ext="${base##*.}"
+        base="${base%.*}"
+        local out
+        out="$dir/${base}.${lang_short}.${ext}"
+        echo "Building $out from $src using $po"
+        po4a -f "$fmt" -m "$src" -p "$po" -l "$out" -o "wrap-po=79" || return 1
+        count=$((count+1))
+    done <<< "$sources"
+    echo "✓ Built $count translated doc(s) for $locale (side-by-side)"
+}
+
 # Main i18n dispatcher function
 i18n() {
     case "${1:-}" in
@@ -470,6 +609,22 @@ i18n() {
             ;;
         makemo)
             i18n_makemo "${2:-}"
+            ;;
+        docs)
+            case "${2:-}" in
+                makepot)
+                    i18n_docs_makepot
+                    ;;
+                makepo)
+                    i18n_docs_makepo "${3:-}"
+                    ;;
+                build)
+                    i18n_docs_build "${3:-}"
+                    ;;
+                *)
+                    echo "Usage: karen i18n docs <makepot|makepo|build> [locale]"
+                    ;;
+            esac
             ;;
         makeall|sync)
             i18n_makeall
@@ -485,6 +640,9 @@ i18n() {
             echo "  makepo [<locale>]   Create or update PO file (all locales if omitted)"
             echo "  makemo [<locale>]   Compile PO file(s) to MO (all locales if omitted)"
             echo "  makeall|sync        makepot + makepo for all locales"
+            echo "  docs makepot        Extract POTs from README/app/doc/*.md|*.txt"
+            echo "  docs makepo [loc]   Create/update PO(s) for docs (all if omitted)"
+            echo "  docs build [loc]    Build translated files side-by-side (README.fr.md)"
             echo "  info              Show i18n configuration"
             echo
             echo "Workflow:"

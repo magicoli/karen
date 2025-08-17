@@ -22,3 +22,4 @@
 # Local environment files
 .env
 .env.local
+tmp/
