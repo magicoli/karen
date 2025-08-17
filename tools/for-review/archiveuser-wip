@@ -1,0 +1,163 @@
+#!/bin/bash
+
+ARCHIVES=/home/archives
+BINDCONF=/etc/bind/named.conf.master
+MAILSPOOL=/var/mail
+DEBUG=yes
+
+export PATH=$PATH:$(dirname "$0")
+OPTSINHELPER=yes . $(which helpers) || exit 1
+shift $(($OPTPROCESSED - 1))
+USAGE="$PGM user@host"
+
+[ "$(whoami)" = "root" ] || end $? Must be run by root
+
+[ "$1" ] || end $? $USAGE
+
+echo "$1" | grep -q "@" || end $? $USAGE
+# Usage $PGM user@domain.name
+user=$(echo $1 | cut -d @ -f 1)
+log user $user
+server=$(echo $1 | cut -d @ -f 2)
+log fetching $user details on $server
+userinfo=$(ssh $server getent passwd $user) || end $? "Could not verify $user@$server"
+userhome=$(echo $userinfo | cut -d : -f 6)
+log home $userhome
+ssh root@$server "grep '^[^#]*${userhome}' /etc/passwd /etc/group; grep -l '^[^#]*${userhome}' /etc/apache2/sites-*/*.conf" > $TMP.configs
+
+if grep apache2/sites-enabled/ $TMP.configs > $TMP.apache.enabled
+then
+	echo "Found $(cat $TMP.apache.enabled | wc -l) active websites"
+	cat $TMP.apache.enabled | sed "s/^/  /g"
+	# yesno "disable these websites?" && echo || end Cancelled
+	echo ssh root@$server a2dissite $(cat $TMP.apache.enabled) >> $TMP.postprocess
+fi
+if grep apache2/sites-available/ $TMP.configs > $TMP.apache.enabled
+then
+	echo "Found $(cat $TMP.apache.enabled | wc -l) configured websites"
+	cat $TMP.apache.enabled | sed "s/^/  /g"
+	# yesno "delete these websites?" && echo || end Cancelled
+	echo ssh root@$server rm $(cat $TMP.apache.enabled) >> $TMP.postprocess
+fi
+if grep /etc/passwd $TMP.configs > $TMP.users
+then
+	echo "Found $(cat $TMP.users | wc -l) user and group entries"
+	cat $TMP.users | sed "s/^/  /g"
+	# yesno "delete these users and groups?" && echo || end Cancelled
+	grep /etc/passwd: $TMP.users | cut -d : -f 2 | while read user
+	do
+		echo ssh root@$server userdel -d $user >> $TMP.postprocess
+	done
+fi
+
+apacheconf=$(egrep "apache2/sites-(available|enabled)/" $TMP.configs | cut -d : -f 2)
+if [ "$apacheconf" ]
+then
+	ssh root@$server "egrep '^[[:blank:]]*Server(Name|Alias)'" $apacheconf \
+	| while read domains
+	do
+		echo "$domains"
+	done | sed -E  -e "s/.*Server(Name|Alias)[[:blank:]]*//" -e "s/^(www|local|\*)\.//" -e "s/\.local$//" \
+	| sort -u > $TMP.domains
+	if [ -e $TMP.domains ]
+	then
+		echo "Found $(cat $TMP.domains | wc -l) domains linked to these websites"
+		cat $TMP.domains | sed "s/^/  /g"
+		# yesno "reconfigure? (to do manually after)" && echo || end Cancelled
+		echo echo RECONFIGURE $(cat $TMP.domains) >> $TMP.postprocess
+	fi
+fi
+
+for domain in $(cat $TMP.domains)
+do
+	for mailserver in $server herbie hal
+	do
+		log checking $mailserver
+		ssh $mailserver "
+		egrep '^$domain|[@:/]$domain|:$userhome' /etc/passwd /etc/postfix/virtual /etc/postfix/relay /etc/postgrey/whitelist_recipients 2>/dev/null
+		ls /etc/postfix/virtual.d/$domain 2>/dev/null"  \
+		| sed "s/^/$mailserver:/" >> $TMP.mailservers
+	done
+	if [ -e $TMP.mailservers ]
+	then
+		echo "Found $(cat $TMP.mailservers | wc -l) domains linked to these websites"
+		cat $TMP.mailservers | sed "s/^/  /g"
+		# yesno "delete mail users?" && echo || end Cancelled
+		grep ":/etc/passwd:" $TMP.mailservers | while read line
+		do
+			$mailserver=$(echo $line | cut -d : -f 1)
+			$mailuser=$(echo $line | cut -d : -f 3)
+			$mailhome=$(echo $line | cut -d : -f 8)
+			echo ssh $mailserver userdel -d $user
+			echo ssh $mailserver rm -rf $mailhome
+		done >> $TMP.postprocess
+	fi
+done
+
+# yesno "Process $user at $server" || end Cancelled
+echo
+log post process on $server
+echo
+cat $TMP.postprocess
+end
+
+rsync -Wavz --delete $server:/home/$user/ /home/$user/ \
+&& tar cfvz /home/$user.tgz /home/$user/ \
+&& mv -v $(stampfile /home/$user.tgz) /home/magic/Archives/ \
+&& ssh $server rm -rf /home/$user \
+&& ssh $server df -h /home/
+
+# Need:
+# 	password and group
+# 	email
+# 	dns config
+# 	website
+# 	mysql databases
+
+## Old script. Not
+end
+
+[ "$2" ] || end 1 "usage: $PGM server user@host|web.domain"
+
+server=$1
+shift
+
+for param in $@
+do
+	if echo $param | grep -q "@"
+	then
+		log user $param
+	elif echo $param | grep -q "\."
+	then
+		domain=$param
+		log domain $domain
+		log fetching apache configs
+		ssh root@$server "egrep -l '^[[:blank:]]*Server(Name|Alias)[[:blank:]].*$domain([[:blank:]]|$)' /etc/apache2/sites-*/*.conf \
+		| xargs realpath 2>/dev/null | sort -u" | tee $TMP.apache.conf | while read file
+		do
+			rsync root@$server:$file $TMP.apache/ && echo $file
+		done
+		log Folders to archive
+		egrep -h '^[[:blank:]]*(DocumentRoot|php_admin_value upload_tmp_dir|php_admin_value session.save_path)' $TMP.apache/*.conf \
+		| sort -u | tee $TMP.folders.info
+		DocumentRoot=$(grep DocumentRoot $TMP.folders.info | sed "s/.*DocumentRoot[[:blank:]]*//")
+		log DocumentRoot $DocumentRoot
+		owner=$(egrep -h "^[[:blank:]]*(AssignUserID|SuexecUserGroup)"  $TMP.apache/*.conf \
+		| head -1 | sed -E -e "s/.*(UserID|UserGroup)  *//" -e "s/[[:blank:]].*//")
+		[ "$owner" ] || owner=www-data
+		log owner $owner
+		ssh root@$server "cd $DocumentRoot && sudo -u $owner -i -- wp config list 2>/dev/null" > $TMP.wp.config && log wordpress site || rm $TMP.wp.config
+
+		# | sed -E -e "s/.*(DocumentRoot|php_admin_value upload_tmp_dir|php_admin_value session.save_path)[[:blank:]]*//" -e 's/"//g' \
+		# dig +short $param
+	else
+		log user $param@localhost
+	fi
+done
+
+
+# ssh user@box tar czf - /dir1/ > /destination/file.tar.gz
+# OR
+# ssh user@box 'cd /dir1/ && tar -cf - file | gzip -9' >file.tar.gz
+
+rm -rf $TMP.apache/

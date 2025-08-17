@@ -1,0 +1,8 @@
+
+ls /etc/apt/sources.list.d/php.list 2>/dev/null \
+&& apt update \
+&& apt install -y ca-certificates apt-transport-https lsb-release \
+&& wget -q https://packages.sury.org/php/apt.gpg -O- | sudo apt-key add - \
+&& echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list \
+&& apt update \
+&& apt upgrade

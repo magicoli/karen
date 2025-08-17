@@ -1,0 +1,43 @@
+#!/bin/bash
+
+## https://lecrabeinfo.net/mettre-a-jour-debian-11-vers-debian-12-bookworm.html
+
+lsb_release -a 2>/dev/null | grep "10.*bullseye"
+[ $? -ne 0 ] && echo "must be run on Debian 10 bullseye" >&2 && exit 1
+[ $UID -ne 0 ] && echo "must be run as root" >&2 && exit 1
+
+apt update && apt upgrade && apt full-upgrade && apt autoremove --purge || exit $?
+
+grep -l "bullseye" /etc/apt/sources.list && cp /etc/apt/sources.list /etc/apt/sources.bullseye
+
+echo <<EOF >> /etc/apt/sources.list
+deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+
+deb http://deb.debian.org/debian-security/ bookworm-security main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian-security/ bookworm-security main contrib non-free non-free-firmware
+
+deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+
+deb http://deb.debian.org/debian bookworml-backports main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian bookworml-backports main contrib non-free non-free-firmware
+EOF
+
+# sed -i 's/bullseye/bookworml/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list
+for file in /etc/apt/sources.list.d/*.list
+do
+    mv "$file" "$file.bullseye"
+done
+
+apt update && apt upgrade --without-new-pkgs \
+&& apt full-upgrade \
+|| exit $?
+
+lsb_release -a
+echo "It must be time to reboot"
+
+apt install -y apt-transport-https lsb-release ca-certificates wget \
+&& wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
+&& echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list \
+&& apt update && apt upgrade

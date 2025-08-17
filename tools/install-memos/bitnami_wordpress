@@ -1,0 +1,56 @@
+#!/bin/bash
+
+admin_email=concierge@magiiic.com
+user_email=olivier@van-helden.net
+user=magic
+[ "$1" ] && domain=$1 || domain=$(hostname -f)
+
+readvar() {
+    for var in $@
+    do
+        varname=$(echo $var | sed "s/\([a-z]\)\([A-Z]\)/\\1 \\2/g")
+        if [ "$AUTOMATIC" = "yes" ]
+        then
+            echo "$varname: ${!var}"
+        else
+            read -e -p "$varname: " -i "${!var}" $var
+        fi
+    done
+}
+
+readvar domain user user_email admin_email || exit $?
+
+echo setting hostname $hostname
+sudo hostname $domain
+hostname | sudo tee /etc/hostname
+hostname -f
+read -p "continue? " || exit $?
+
+sudo apt update \
+&& sudo apt install rsync software-properties-common certbot -y \
+|| exit $?
+
+sudo certbot -d $domain -d *.$domain --manual -m $admin_email --preferred-challenges dns certonly \
+&& [ -f /etc/letsencrypt/live/$domain/fullchain.pem ] \
+&& sudo /opt/bitnami/ctlscript.sh stop \
+&& sudo mv /opt/bitnami/apache2/conf/bitnami/certs/server.crt /opt/bitnami/apache2/conf/bitnami/certs/server.crt.old \
+&& sudo mv /opt/bitnami/apache2/conf/bitnami/certs/server.key /opt/bitnami/apache2/conf/bitnami/certs/server.key.old \
+&& sudo ln -sf /etc/letsencrypt/live/$domain/privkey.pem /opt/bitnami/apache2/conf/bitnami/certs/server.key \
+&& sudo ln -sf /etc/letsencrypt/live/$domain/fullchain.pem /opt/bitnami/apache2/conf/bitnami/certs/server.crt \
+&& sudo /opt/bitnami/ctlscript.sh start \
+|| exit $?
+
+echo certbot configured
+exit
+
+sudo wp user update --user_nicename=$user --display_name=$user --user_email=$user_email 1 \
+&& sudo wp db query "UPDATE wp_users SET user_login = '$user' WHERE ID=1" \
+&& sudo wp user list \
+&& sudo wp option set admin_email $admin_email \
+&& sudo wp plugin deactivate jetpack \
+&& sudo wp plugin activate all-in-one-wp-migration \
+|| exit $?
+
+echo "Updating plugins and themes"
+sudo wp plugin update --all
+sudo wp theme update --all

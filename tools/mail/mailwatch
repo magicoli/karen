@@ -1,0 +1,2 @@
+ssh root@armstrong tail -f /var/spool/mail/mff &
+ssh root@armstrong tail -f /home/mff/mail/sent-mail 

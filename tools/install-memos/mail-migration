@@ -1,0 +1,181 @@
+#!/bin/bash
+
+DEBUG=yes
+PGM=$(basename $0)
+TMP=$(mktemp /tmp/$PGM.XXXXXX)
+CACHE=/tmp/$PGM.cache
+NEW=/tmp/$PGM.new
+trap "rm -rf $TMP $TMP.*" EXIT
+
+. /opt/magic/bin/helpers
+
+[ -z "$1" ] && echo "Usage: $0 <domain> [<newmailserver>]" && exit 1
+newmx=mungo.magiiic.com
+ns=ns1.magiiic.com
+mxip=$(dig +short $newmx a | head -1)
+cloudip=$(dig +short nextcloud.magiiic.com a | head -1)
+## Delete cache if older than 1 hour
+find $CACHE.* -mmin +60 -exec rm -f {} \;
+rm -f $NEW.*
+
+log "using $(ls $CACHE.* | wc -l) cache files"
+
+for domain in $@
+do
+    dig +short $domain soa @8.8.8.8 | grep -q ^$ns\. || { log "Domain $domain soa is not $ns"; continue; }
+    dig +short $domain mx | tee $CACHE.mx | grep -q "^10 $newmx$" && log "skipping $domain, mx already $newmx" && continue
+    log "processing $domain"
+    currentmx=$(sort -n $CACHE.mx | head -1 | cut -d " " -f 2 | sed "s/\.*$//")
+    log "current server: $currentmx"
+    echo "$currentmx" | egrep -q "^(hal|mail)\.magiiic\.(com|media)$" \
+    || ssh root@$currentmx "hostname -f"  \
+    || { log "Domain $domain mx $currentmx not local"; continue; }
+
+    log "Collecting data from $ns"
+    [ ! -f $CACHE.$domain.zone ] && scp root@$ns:/etc/bind/zones/$domain.zone $CACHE.$domain.zone
+    serial=$(awk '/IN[[:space:]]*SOA/,/\)/ { if ($1 ~ /^[0-9]+$/) {print $1; exit} }' $CACHE.$domain.zone)
+    [ "$serial" = "" ] && end 1 "Could not find current serial in $domain zone"
+    newserial=$(date "+%Y%m%d01")
+    [ $newserial -le $serial ] && newserial=$(($serial + 1))
+    sed -E \
+    -e "s/(.*[[:blank:]])MX[[:blank:]].*/\\1MX\t10 mungo.magiiic.com\n\\1MX\t20 hal.magiiic.com/" \
+    -e "s/mail\.magiiic\.(com|media)\./mail/" \
+    -e "s/mail\.$domain\./mail/" \
+    -e "s/^mail[[:blank:]]+(IN[[:blank:]]+)?(CNAME|A)[[:blank:]]+.*/mail\t\t\tA\t$mxip ; mungo.magiiic.com/" \
+    -e "s:magiiic.(com|media)/mail/config:mungo.magiiic.com/mail/config:" \
+    -e "/IN[[:space:]]*SOA/,/\)/ s/$serial/$newserial/" \
+    -e "s/(SRV.*[[:blank:]])mail.*/\\1mail.$domain./" \
+    $CACHE.$domain.zone | awk 'NF==0 || !seen[$0]++' \
+    > $NEW.$domain.zone
+    diff $CACHE.$domain.zone $NEW.$domain.zone | grep -q . && egrep "$serial|$newserial|MX|mail|imap|pop" $NEW.$domain.zone
+
+    log "Collecting data from current mail server"
+    [ ! -f $CACHE.$currentmx.passwd ] && scp root@$currentmx:/etc/passwd $CACHE.$currentmx.passwd
+    [ ! -f $CACHE.$currentmx.shadow ] && scp root@$currentmx:/etc/shadow $CACHE.$currentmx.shadow
+    [ ! -f $CACHE.$currentmx.group ] && scp root@$currentmx:/etc/group $CACHE.$currentmx.group
+    [ ! -f $CACHE.$domain.virtual ] && scp root@$currentmx:/etc/postfix/virtual.d/$domain $CACHE.$domain.virtual
+    echo "$domain" >> $NEW.virtuals
+    [ ! -f $CACHE.spools ] && ssh $currentmx "ls /var/spool/mail/*" > $CACHE.spools
+    uniq $CACHE.$domain.virtual | grep . > $NEW.$domain.virtual
+    grep -E "^[^:]+[@-]$domain:" $CACHE.$currentmx.passwd >> $NEW.passwd
+    grep -E "^[^:]+[@-]$domain:" $CACHE.$currentmx.shadow >> $NEW.shadow
+    touch $NEW.group
+    cut -d: -f4 $NEW.passwd | while read gid
+    do
+        grep ":x:$gid:" $CACHE.$currentmx.group 
+    done | while read line
+    do
+        grep -q "^$line$" $NEW.group && continue
+        echo "$line" >> $NEW.group
+    done
+
+    # scp root@$currentmx:/etc/shadow $CACHE.shadow
+    # scp root@$currentmx:/etc/group $CACHE.group
+    # scp root@$currentmx:/etc/postfix/virtual.d/$domain $CACHE.virtual
+
+    # cat $CACHE.virtual
+#     ssh root@$ns 
+# for zone in $(cat nomailbox | cut -d " " -f 1)
+#  do echo "$domain"
+ 
+#  rndc freeze $domain && emacs /etc/bind/zones/$domain.zone && rndc thaw $domain
+#  rndc notify $domain
+#  done
+
+    #  | grep -q $domain || echo "Domain $domain not found" && exit 1
+done
+
+ls $NEW.*.zone >/dev/null 2>/dev/null || end "Nothing to do"
+
+log "Domains to update: $(ls $NEW.*.zone | wc -l)"
+ls $NEW.*.zone | sed -e "s:^$NEW.::" -e "s/.zone//" | sed "s/^/  /"
+log "Users to add: $(cat $NEW.passwd | wc -l)"
+cut -d ":" -f 1-4 $NEW.passwd | sed "s/^/  /"
+log "Groups to add: $(cat $NEW.group | wc -l)"
+cut -d ":" -f 1-3 $NEW.group | sed "s/^/  /"
+log "Virtual files to update: $(ls $NEW.*.virtual | wc -l)"
+ls $NEW.*.virtual | sed -e "s:^$NEW.:/etc/postfix/virtual.d/:" -e "s/\.virtual$//" | sed "s/^/  /"
+cat $NEW.passwd | cut -d ":" -f 6 | sort | uniq >> $NEW.maildir
+log "Maildir to sync: $(cat $NEW.maildir | wc -l)"
+cat $NEW.maildir | sed "s/^/  /"
+touch $NEW.spool
+cat $NEW.passwd | cut -d ":" -f 1 | grep -v "@" | sort -u | sed "s:^:/var/spool/mail/:" \
+| while read spool
+do
+    grep -q "^$spool$" $CACHE.spools && echo $spool >> $NEW.spool || log "no spool for $spool"
+done
+log "Mail spool queues to sync: $(cat $NEW.spool | wc -l)"
+cat $NEW.spool | sed "s/^/  /"
+
+yesno -y "Do you want to continue?" || end "Cancelled"
+
+# log Updating name server
+for new in $NEW.*.zone
+do
+    domain=$(echo $new | sed -e "s:^$NEW.::" -e "s/.zone$//")
+    log "Updating $domain zone"
+    diff $CACHE.$domain.zone $new
+
+    scp $new root@$ns:/etc/bind/zones/$domain.zone
+    ssh root@$ns "rndc freeze $domain && rndc reload $domain && rndc thaw $domain"
+    ssh root@$ns "rndc notify $domain"
+done
+
+log "Updating new mail server"
+cat <<EOF > $NEW.newmx.script
+awk '!seen[\$0]++' /etc/passwd $NEW.passwd > $TMP.passwd && cat $TMP.passwd > /etc/passwd
+awk '!seen[\$0]++' /etc/shadow $NEW.shadow > $TMP.shadow && cat $TMP.shadow > /etc/shadow
+awk '!seen[\$0]++' /etc/group $NEW.group > $TMP.group && cat $TMP.group > /etc/group
+for virtual in $NEW.*.virtual
+do
+    domain=\$(echo \$virtual | sed -e "s:^$NEW.::" -e "s/.virtual$//")
+    cat \$virtual > /etc/postfix/virtual.d/\$domain
+done
+pwconv
+grpconv
+postfix-reload
+cat $NEW.maildir | uniq | while read maildir
+do
+    mkdir -p \$maildir
+    rsync -Wavz $currentmx:\$maildir/ \$maildir/
+done
+cat $NEW.spool | uniq | while read spool
+do
+    rsync $currentmx:\$spool \$spool
+done
+EOF
+chmod +x $NEW.newmx.script
+scp $NEW.* root@$newmx:/tmp/
+ssh -t root@$newmx $NEW.newmx.script
+
+log Disabling moved accounts on old mail server
+cat <<EOF > $NEW.oldmx.script
+mkdir -p /etc/postfix/virtual.moved
+cat $NEW.virtuals | while read domain
+do
+    mv -v /etc/postfix/virtual.d/\$domain /etc/postfix/virtual.moved/
+    grep -q "^\$domain " /etc/postfix/relay || echo "\$domain OK" >> /etc/postfix/relay
+done
+archive=/home/archives/mail-migration
+mkdir -p \$archive/etc
+touch \$archive/etc/passwd \$archive/etc/shadow \$archive/etc/group
+cat $NEW.maildir $NEW.spool | while read maildir
+do
+    mkdir -p \$archive/\$(dirname \$maildir)
+    mv -v \$maildir \$archive/\$(dirname \$maildir)
+done
+awk '!seen[\$0]++' \$archive/etc/passwd $NEW.passwd > $TMP.passwd && cat $TMP.passwd > \$archive/etc/passwd
+awk '!seen[\$0]++' \$archive/etc/shadow $NEW.shadow > $TMP.shadow && cat $TMP.shadow > \$archive/etc/shadow
+awk '!seen[\$0]++' \$archive/etc/group $NEW.group > $TMP.group && cat $TMP.group > \$archive/etc/group
+cat $NEW.passwd | cut -d ":" -f 1 | grep -v "@" | sort -u | while read user
+do
+    echo "Deleting user \$user" >&2
+    userdel \$user
+done
+postfix-reload
+EOF
+chmod +x $NEW.oldmx.script
+scp $NEW.* root@$currentmx:/tmp/
+ssh -t root@$currentmx $NEW.oldmx.script
+
+# log Updating new mail server

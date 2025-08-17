@@ -1,0 +1,223 @@
+#!/bin/bash
+
+export PATH=$PATH:$(dirname $0)
+. $(which helpers) || exit 1
+
+for prefs in /etc/$PGM ~/.$PGM ~/etc/$PGM
+do
+    [ -f "$prefs" ] && . "$prefs"
+done
+
+[ "$1" ] && site_name=$1
+[ "$2" ] && site_mail=$2
+[ "$3" ] && profile=$3
+shift 3
+[ "$1" ] && other_modules="$@"
+
+[ "$profile" ] || profile="standard"
+for prefs in /etc/$PGM.$profile ~/.$PGM.$profile ~/etc/$PGM.$profile
+do
+    [ -f "$prefs" ] && . "$prefs"
+done
+USAGE="$PGM \"Site name\" admin@mail [profile]"
+
+[ ! "$site_name" ] && usage && end 1 "site_name not set"
+[ ! "$site_mail" ] && usage && end 1 "site_mail not set"
+[ "$profile" ] || profile="standard"
+[ "$machine_name" ] || machine_name=$(echo "$site_name" | webnormalize)
+echo "Site          $site_name ($machine_name)"
+echo "   mail       $site_mail"
+echo "   profile    $profile"
+[ "$account_name" ] || account_name=$machine_name
+[ "$account_pass" ] || account_pass=$(randompassword 16)
+[ "$account_mail" ] || account_mail=$site_mail
+echo "Main account  $account_name"
+echo "   email      $account_mail"
+echo "   password   $account_pass"
+[ "$db_name" ] || db_name=${machine_name//./}
+[ "$db_host" ] || db_host=localhost
+[ "$db_user" ] || db_user=${db_name//./}
+[ "$db_pass" ] || db_pass=$(randompassword 16)
+[ "$db_prefix" ] || db_prefix=${db_name//./}_
+echo "Database      $db_name"
+echo "   prefix     $db_prefix"
+echo "   host       $db_host"
+echo "   user       $db_user"
+echo "   pass       $db_pass"
+[ "$db_su" ] || db_su=root
+#[ "$db_su_pw" ] || end 1 db_su_pw not set
+[ "$locales" ] || locales=(fr en)
+[ "$locale" ] || locale=${locales[0]}
+[ "$default_country" ] || default_country=GP
+echo "Localization  ${locales[@]}"
+echo "   default    $locale"
+echo "   country    $default_country"
+[ "$default_theme" ] || default_theme=$machine_name
+echo "Theme         $default_theme"
+echo "Modules       $modules $other_modules"
+
+echo "show databases like '$db_name'" | mysql -BN | grep -q "$db_name" \
+    && log 1 "WARNING: a database named $db_name exists and will be deleted"
+
+read -p "Proceed? (y/n) " proceed && [ "$proceed" = "y" ] || end Aborted
+
+log should fetch core drupal here, at least if not present
+
+drush status -p > $TMP.status
+. $TMP.status
+initial_root=$PWD
+[ "$drupal_version" ] || end 1 not a drupal directory
+cd "$drupal_root" || end 2 could not cd to $drupal_root
+cd "$site_path" || end 3 could not cd to $site_path
+
+install_url=$(drush vget -p install_url 2>/dev/null | cut -d "'" -f 4); if [ ! "$install_url" ]; then if [ ! "$site_uri" -o "$site_uri" = "http://default" ]; then log fetchinginstall url from apache config; install_url=$(grep -lr -e $initial_root -e $drupal_root /etc/apache2/sites-enabled/* | xargs grep -e "^[[:blank:]]*ServerName[[:blank:]]" -e "^[[:blank:]]*ServerAlias[[:blank:]]" | sed "s/\*\.//" | sed "s/.*Server[A-Za-z]*[[:blank:]]*//" | head -1 | sed "s|^|http://|");     else   log using drush site uri $site_uri; stall_url=$site_uri;     fi; else     log install url already set as $install_url; fi
+
+log 1 install url $install_url
+
+settings="$drupal_root/$site_path/setting.php"
+if [ ! -f $settings ]
+then
+    install_params="$install_params
+    --db-prefix=$db_prefix
+    --db-su=$db_su \
+    --db-su-pw=$db_su_pw \
+    --db-url=mysql://$db_user:$db_pass@$db_host/$db_name"
+fi
+
+log install $profile profile
+drush site-install $profile \
+    --account-mail=$account_mail \
+    --account-name="$account_name" \
+    --account-pass="$account_pass" \
+    --locale=$locale \
+    --site-name="$site_name" \
+    --site-mail=$site_mail \
+    $install_params \
+    install_configure_form.site_default_country=$default_country \
+    2>&1 | tee $TMP.install
+
+tail $TMP.install | grep -q "Aborting" && end "Aborted"
+tail $TMP.install | grep -q "Installation complete" || end $?
+
+drush vset --exact install_url $install_url
+
+site_path=$(drush status -p site_path)
+log site path $site_path
+
+drush status -p > $TMP.status
+. $TMP.status
+
+[ "$site_path" ] || end 3 "weird, no site folder defined"
+[ -d "$drupal_root/$site_path" ] || end 3 "weird, can't find site folder $site_path"
+
+drush vset --exact user_register 0
+
+drush vset --exact mollom_audio_captcha_enabled 1
+drush vset --exact mollom_connection_timeout "3"
+drush vset --exact mollom_fai_dialog "mollom"
+drush vset --exact mollom_fallback "1"
+drush vset --exact mollom_fba_enabled 0
+drush vset --exact mollom_log_minimum_severity "4"
+drush vset --exact mollom_privacy_link 1
+drush vset --exact mollom_private_key "298533edc8b4f6f63c2162d282d17c09"
+drush vset --exact mollom_public_key "a22d7037de806c2511bb26e08ad46d37"
+drush vset --exact mollom_testing_mode 0
+php -r "print json_encode(array('languageCode' => '$locale'));" | drush vset --format=json mollom_languages_expected -
+php -r "print json_encode(array('node' => 0, 'comment' => 0));" | drush vset --format=json mollom_fai_entity_types -
+
+drush vset --exact file_temporary_path "../tmp"
+drush vset --exact error_level 1
+drush vset --exact pathauto_node_pattern [node:menu-link:parent]/[node:title]
+drush vset --exact pathauto_node_article_pattern news/[node:menu-link:parent]/[node:title]
+drush vset --exact pathauto_reduce_ascii 1
+drush vset --exact pathauto_taxonomy_term_pattern [term:vocabulary]/[term:parents:join-path]/[term:name]
+drush vset --exact pathauto_taxonomy_term_tags_pattern [term:parents:join-path]/[term:name]
+drush vset --exact pathauto_transliterate 1
+drush vdel --exact -y update_notify_emails
+
+#drupal-cache 0
+
+log load and enable basic language modules
+# Now drush downloads modules if needed
+#drush dl -n l10n_update l10n_client transliteration pathauto redirect mollom token email_registration
+drush en -y $modules $other_modules
+
+#log setting default theme
+theme_folder="$drupal_root/$site_path/themes/$machine_name"
+theme_info="$drupal_root/$site_path/themes/$machine_name/$machine_name.info"
+if [ ! -d "$theme_folder" ]
+then
+    log load base theme in $theme_folder
+    mkdir -p $(dirname "$theme_folder")
+    git clone --branch 7.x-1.x http://git.drupal.org/sandbox/magicoli/2535968.git "$theme_folder"
+fi
+if [ ! -f "$theme_info" ]
+then
+    log create $machine_name.info
+    sed "s/^name = .*/name = $site_name/" $theme_folder/*.info > $theme_info
+fi
+
+drush en -y $default_theme
+drush vset theme_default $default_theme
+
+log add languages ${locales[@]} and set $locale as default
+drush language-add ${locales[@]} || end $?
+drush language-default $locale || end $?
+
+if [ "$drupal_root" -a "$temporary_file_directory_path" ]
+then
+    log setting permissions on $drupal_root $temporary_file_directory_path
+    chgrp -R www-data $drupal_root/$site_path/files $temporary_file_directory_path
+    chmod -R ug+rwX $drupal_root/$site_path/files $temporary_file_directory_paht
+fi
+
+admin_mail=$(drush sql-query --db-prefix --extra="-BN" "select mail from {users} where uid=1")
+site_name=$(drush vget --exact site_name | sed "s/^[A-Za-z0-9_-]*: \"//" | sed "s/\"$//")
+site_mail=$(drush vget --exact site_mail | sed "s/^[A-Za-z0-9_-]*: \"//" | sed "s/\"$//")
+reset_url=$(drush -l $install_url uli)
+
+message="Votre site \"$site_name\" a été créé.
+
+Vous pouvez vous connecter à l'aide des informations suivantes:
+
+Adresse du site: $install_url
+
+   Nom d'utilisateur: $account_name
+   Mot de passe initial: $account_pass
+
+Vous pouvez choisir un nouveau mot de passe en cliquant ce lien:
+$reset_url
+
+"
+
+
+translations="Le site est opérationnel et les traductions sont maintenant en cours de 
+chargement et seront activées automatiquement dans quelques minutes."
+
+mail_message=$(echo "$message$translations" | sed "s/'/\\\\'/g")
+mail_site_name=$(echo "$site_name" | sed "s/'/\\\\'/g")
+headers='"MIME-Version: 1.0,\r\n
+         Content-type: text/html; charset=UTF-8,\r\n"'
+
+drush php-eval "print mail(
+      '$admin_mail',
+      'Le site \"$mail_site_name\" est en ligne',
+      utf8_decode('$mail_message'),
+      'From: $mail_site_name <$site_mail>',
+      '-f $site_mail'
+);"
+
+echo "$message"
+echo "Ces instructions ont été envoyées à l'adresse $admin_mail"
+echo
+
+read -p "Load translations? (y/n) " translate && [ "$translate" = "y" ] || end Translations not loaded
+
+log update translations
+drupal-translations-update
+
+log translations loaded
+
+echo "$message"
+
+end

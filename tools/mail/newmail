@@ -1,0 +1,95 @@
+#!/bin/bash
+
+catchalldefault=REJECT
+mta=postix
+mda=procmail
+virtual=/etc/postfix/virtual
+maildir=Maildir
+
+export PATH=$PATH:$(dirname $0)
+DEBUG=yes
+
+SYNTAX="<acount> <email address>"
+USAGE="$PGM <acount> <email address>"
+
+. $(which helpers) || exit 1
+
+for prefs in /etc/$PGM ~/etc/$PGM ~/.${PGM}rc
+do
+	[ -f "$prefs" ] && . "$prefs"
+done
+
+[ ! "$2" ] && usage && end 2
+
+[ "$(whoami)" = "root" ] || end $? "Must be run by root or with sudo"
+which dovecot >/dev/null && which postfix >/dev/null || yesno "This doesn't look like a mail server, really proceed? " || end $?
+which postfix-reload >/dev/null || end $? "postfix-reload script not found"
+
+LOCK=/tmp/.$PGM.lock
+[ -f "$LOCK" ] && pid=$(cat "$LOCK") && end 2 "another process is already running (pid $pid)"BACKUPS
+echo $$ > $LOCK
+
+if [ "$1" = "-a" ]
+then
+    shift
+    alias=$1
+    forward=$2
+    echo "alias: $alias"
+    echo "forward: $forward"
+else
+    owner=$1
+    group=$(id $owner | sed "s/.*gid=[0-9]*(//" | cut -d ")" -f 1)
+    mailbox=$(echo $2 | tr [:upper:] [:lower:])
+    id "$owner" >/dev/null 2>/dev/null || end 2 user $owner does not exist
+    id "$mailbox" >/dev/null 2>/dev/null && end 3 mailbox $mailbox already exist
+    echo $mailbox | egrep -E -q "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b" \
+        || end 4 mail $mailbox malformed
+    home=$(eval echo ~$owner)
+    [ -d $home ] || end 2 "$owner's home directory $home does not exist"
+    log "owner=$owner"
+    log "group=$group"
+    log "mailbox=$mailbox"
+    log "home=$home"
+    mailusername=$(echo $mailbox | cut -d @ -f 1)
+    log "mailusername=$mailusername"
+    maillocaluser=$(echo $mailbox | sed "s/@/-/")
+    maillocalescaped=$(echo $maillocaluser | sed "s/%/%%/")
+    log "maillocaluser $maillocaluser"
+    maildomain=$(echo $mailbox | cut -d @ -f 2)
+    log "maildomain=$maildomain"
+    virtual=${virtual}.d/$maildomain
+    log "virtual=$virtual"
+    mailhome=$home/domains/$maildomain/email/$mailusername
+    log "mailhome=$mailhome"
+    useradd -g $group -d $mailhome -s /dev/null $mailbox \
+        && log "user $mailbox:$group created" \
+        || end $? could not create $mailbox:$user
+    [ -d "$mailhome" ] \
+        || ( mkdir -p $mailhome/$maildir && chown -R $mailbox:$group $mailhome ) \
+        || end $? could not create $mailhome
+    id $maillocaluser >/dev/null 2>/dev/null \
+        && log "local $maillocaluser aleardy exists" \
+        || (
+        grep "$mailbox:" /etc/passwd | sed "s/^$mailbox/$maillocaluser/" > $TMP.localuser
+        cat $TMP.localuser >> /etc/passwd
+        pwconv
+        )
+    egrep "^$maildomain[[:blank:]]*($maildomain|ENABLED|OK)$" $virtual 2>/dev/null \
+        && echo "$maildomain already handled" \
+        || printf "$maildomain\tENABLED\n" >>$virtual
+#        || printf "$maildomain\t$maildomain\n"
+		if [ "$catchalldefault" ]
+		then
+			egrep -E "^@$maildomain[[:blank:]]+" $virtual 2>/dev/null \
+			&& echo "$maildomain catchall already defined" \
+			|| printf "@$maildomain\t$catchalldefault\n" >>$virtual
+		fi
+		#        || printf "$maildomain\t$maildomain\n"
+    grep -q "^$mailbox[[:blank:]]*$maillocaluser$" $virtual 2>/dev/null \
+        && echo "$mailbox already handled" \
+        || printf "$mailbox\t$maillocalescaped\n" >>$virtual
+    # newaliases
+    # postmap /etc/postfix/virtual
+    # service postfix reload
+		postfix-reload
+fi

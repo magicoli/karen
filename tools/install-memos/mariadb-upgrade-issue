@@ -1,0 +1,63 @@
+0
+
+I am stuck and I don't know what to do anymore. I am trying to install Mariadb and then for some kind of occassion these errors persist like glue.
+
+dpkg: regarding .../mariadb-client-core-10.3_1%3a10.3.23+maria~focal_amd64.deb containing mariadb-client-core-10.3:  mariadb-client-10.3 conflicts with mysql-client-core-5.5   mariadb-client-core-10.3 provides mysql-client-core-5.5 and is to be installed.
+
+dpkg: error processing archive
+/var/cache/apt/archives/mariadb-client-core-10.3_1%3a10.3.23+maria~focal_amd64.deb
+(--unpack):  conflicting packages - not installing
+mariadb-client-core-10.3
+
+dpkg: regarding
+.../mariadb-client-10.3_1%3a10.3.23+maria~focal_amd64.deb containing
+mariadb-client-10.3:  mariadb-client-core-10.3 conflicts with
+mysql-client-5.5   mariadb-client-10.3 provides mysql-client-5.5 and
+is to be installed.
+
+dpkg: error processing archive
+/var/cache/apt/archives/mariadb-client-10.3_1%3a10.3.23+maria~focal_amd64.deb
+(--unpack):  conflicting packages - not installing mariadb-client-10.3
+
+Preparing to unpack .../mysql-common_1%3a10.3.23+maria~focal_all.deb
+... Unpacking mysql-common (1:10.3.23+maria~focal) over
+(5.8+1.0.5ubuntu2) ... Errors were encountered while processing: 
+/var/cache/apt/archives/mariadb-client-core-10.3_1%3a10.3.23+maria~focal_amd64.deb
+/var/cache/apt/archives/mariadb-client-10.3_1%3a10.3.23+maria~focal_amd64.deb
+E: Sub-process /usr/bin/dpkg returned an error code (1)
+
+I have tried these
+
+sudo apt-get install -f 
+sudo apt-get remove --purge mariadb* 
+sudo apt-get remove --purge mysql* 
+sudo dpkg -i --force-overwrite-all /var/cache/apt/archives/ 
+sudo apt-get autoremove
+
+Please help me as I cant install anything
+apt
+package-management
+updates
+dpkg
+mysql
+Share
+Improve this question
+Follow
+edited Jul 1 '20 at 9:08
+Jos
+20.5k66 gold badges6767 silver badges7373 bronze badges
+asked Jul 1 '20 at 8:35
+echo solution for error
+echo "trying to overwrite '/usr/bin/my_print_defaults', which is also in package mariadb-server-10.3"
+
+exit
+
+# As explained on https://askubuntu.com/questions/1255312/broken-package-of-mariadb
+
+sudo dpkg --remove --force-remove-reinstreq mariadb-server mariadb-server-10.3 mariadb-client-10.3
+sudo apt-get update
+sudo reboot
+sudo apt-get upgrade
+sudo apt install mariadb-server
+
+

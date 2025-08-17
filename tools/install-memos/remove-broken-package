@@ -1,0 +1,2 @@
+sudo dpkg --remove --force-remove-reinstreq package_name
+# https://askubuntu.com/questions/525088/how-to-delete-broken-packages-in-ubuntu

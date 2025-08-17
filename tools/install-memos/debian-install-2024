@@ -1,0 +1,273 @@
+#!/bin/bash
+
+INSTALLUFW=yes
+DEBUG=yes
+PGM=$(basename $0)
+RELEASE=$(lsb_release -sc)
+[ "$RELEASE" ] || exit $?
+
+#sed -i "s:^# *\(deb.*backports\):\\1:" /etc/apt/sources.list
+which rsync  >/dev/null && which git >/dev/null && which dnsutils >/dev/null
+if [ $? -ne 0 ]
+then
+  if [ "$APTUPDATED" != "yes" ]
+  then
+    apt update && APTUPDATED=yes || exit $?
+  fi
+  if [ "$APTUPGRADED" != "yes" ]
+  then
+    apt -y upgrade && APTUPGRADED=yes || exit $?
+  fi
+  apt install -y rsync git dnsutils || exit $?
+fi
+
+[ ! -d /opt ] && mkdir /opt/
+id magic >/dev/null
+if [ $? -ne 0 ]
+then
+  echo $PGM: Creating user magic
+  groupadd -g 1000 magic
+  useradd -u1000 -g 1000 -s /bin/bash magic
+  mkdir -p ~magic /opt/magic
+  chown -R magic:magic ~magic /opt/magic
+  sudo -u magic git config --global user.email olivier@van-helden.net
+  sudo -u magic git config --global user.name "Olivier van Helden ($HOSTNAME)"
+fi
+
+[ ! -f /etc/sudoers.d/magic ] && echo "magic         ALL = (ALL) NOPASSWD: ALL" > /etc/sudoers.d/magic
+
+[ ! -f ~magic/.ssh/id_rsa.pub ] \
+  && su magic -c "ssh-keygen"
+[ ! -f ~magic/.ssh/authorized_keys ] \
+  && cp ~/.ssh/authorized_keys ~magic/.ssh/ \
+  && chown -R magic:magic ~magic/.ssh
+
+# su - magic -c "ssh git.magiiic.com exit"
+[ $? -ne 0 ] && cat ~magic/.ssh/id_rsa.pub \
+&& read -p "Add the key above to git server account and press enter..."
+## add magic ssh key to gitlab, then execute as magic:
+
+sudo -u magic ssh-keyscan -H git.magiiic.com
+[ -d /opt/magic ] || mkdir /opt/magic && chown magic:magic /opt/magic || exit $?
+
+[ -d /opt/magic/bin ] && echo "$PGM: /opt/magic/bin present" || sudo -u magic git clone -b master git@git.magiiic.com:magic/bin.git /opt/magic/bin || exit $?
+echo ":$PATH:" | grep -q ":/opt/magic/bin:" || export PATH=$PATH:/opt/magic/bin
+. /opt/magic/bin/helpers || exit $?
+[ -d /opt/magic/etc ] && log "/opt/magic/etc present" || sudo  -u magic git clone -b master git@git.magiiic.com:magic/etc.git /opt/magic/etc || end $?
+
+cd /etc/profile.d \
+&& ls /opt/magic/etc/profile.d/*sh \
+| while read file
+do
+  [ -e "$(basename $file)" ] && continue
+  ln -s "$file" && log profile.d added $file
+done
+cd "$OLDPWD"
+
+which emacs  >/dev/null && which rsync >/dev/null \
+ || apt install -y emacs screen rsync git || end $?
+
+ which zip  >/dev/null && which unzip >/dev/null \
+  || apt install -y zip unzip || end $?
+
+which ufw  >/dev/null
+if [ $? -ne 0 ]
+then
+  apt install -y ufw || end $?
+  chmod g-w /lib/ufw
+  ufw default deny
+  ufw default allow outgoing
+  ufw allow SSH
+  /opt/magic/bin/ufw-update-local-rules-and-servers || end $?
+fi
+
+which sshguard || apt install sshguard
+myip=$(echo $SSH_CLIENT | cut -d " " -f 1)
+if [ "$myip" ] && grep -vq "^$myip$" /etc/sshguard/whitelist
+then
+  echo $myip >> /etc/sshguard/whitelist
+  service sshguard restart
+fi
+
+which mysql >/dev/null || if yesno "Install mariadb server?"
+then
+  apt install -y mariadb-client mariadb-server mysqltuner || end $?
+  mysql_secure_installation
+  if yesno "Configure mysql?"
+  then
+  	emacs /etc/mysql/my.cnf
+  	service mysql restart || end $?
+  fi
+  cat /opt/magic/etc/servers | while read server ips
+  do
+    echo "Allowing mysql port for $server"
+    for ip in $ips
+    do
+      printf "$ip "
+      ufw allow from $ip to any port 3306
+    done
+  done
+elif yesno "Install mariadb client?"
+then
+  apt install -y mariadb-client || end $?
+fi
+
+(which dovecot && which && which spamassassin && which clamd ) >/dev/null \
+|| if yesno "Install mail server?"
+then
+  ### THE RIGHT WAY for mail server
+  ### excellent tutorial
+  ### with some small details changes:
+  #   mail_location = maildir:~/Maildir
+  #   passdb {
+  #     driver = pam
+  #   }
+  #   userdb {
+  #     driver = passwd
+  #   }
+  ### https://appbead.com/blog/how-to-setup-mail-server-on-debian-8-jessie-with-postfix-dovecot-1.html
+
+    # Spam protection explained:
+    #  https://www.linuxbabe.com/mail-server/block-email-spam-postfix
+
+    # iRedMail full opensource mail solution
+    #   https://www.linuxbabe.com/mail-server/ubuntu-18-04-iredmail-email-server
+    #   https://iredmail.org/
+
+    # Check Maildir and procmail conf:
+    # https://wiki.debian.org/MaildirConfiguration
+
+  apt install postfix dovecot-imapd dovecot-pop3d dovecot-lmtpd
+  # apt install postfix postfix-mysql postfix-doc mysql-client mysql-server openssl getmail4 rkhunter binutils dovecot-imapd dovecot-pop3d dovecot-mysql dovecot-sieve dovecot-lmtpd sudo
+  emacs /etc/postfix/master.cf
+  [ -d /etc/postfix/virtual.d ] || mkdir -p /etc/postfix/virtual.d || exit $?
+  [ -f /etc/postfix/virtual ] || touch /etc/postfix/virtual || exit $?
+  service postfix restart
+
+  apt install spamassassin clamav clamav-daemon clamav-docs postgrey procmail
+  sed -i "s/AllowSupplementaryGroups false/AllowSupplementaryGroups true/" /etc/clamav/clamd.conf
+  # apt install amavisd-new spamassassin clamav clamav-daemon zoo unzip bzip2 arj nomarch lzop cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl libnet-ident-perl zip libnet-dns-perl
+  # service spamassassin stop
+  # systemctl disable spamassassin
+  ufw allow POP3
+  ufw allow POP3S
+  ufw allow IMAP
+  ufw allow IMAPS
+  ufw allow SMTP
+  ufw allow "Postfix SMTPS"
+  ufw allow 587
+fi
+
+which apache2 >/dev/null || if yesno "Install apache and php?"
+then
+  ls /etc/apt/sources.list.d/php*.list 2>/dev/null
+  if [ $? -ne 0 ]
+  then
+    apt -y install lsb-release apt-transport-https ca-certificates || end $?
+    wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg || end $?
+    echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list  || end $?
+    apt update && apt upgrade
+  fi
+
+#  phpversion=$(apt search "php[0-9\.]*$" | cut -d " " -f 3 | grep "^php[0-9\.]*$" | sort | tail -1)
+	# simple (ubuntu 16/debian 9):
+	# apt install apache2 curl dbconfig-common  wwwconfig-common php libapache2-mod-php libapache2-mod-upload-progress php-mysql php-pgsql libapache2-mpm-itk
+	# apt install  php-imagick php-gd php-curl php-imap php-intl
+	# + complexe:
+	apt install -y apache2 libapache2-mpm-itk apache2-utils imagemagick libapache2-mod-fcgid libapache2-mod-php libexpat1 memcached php-cli php-common php-curl php-gd php-imagick php-imap php php-intl php-memcached php-mysql php-pgsql php-pspell php-tidy php-xml  php-pear ssl-cert || end $?
+  # php-opcache
+
+	a2enmod actions auth_digest dav_fs dav include mpm_itk rewrite ssl || end $?
+  ln -s /opt/magic/etc/apache2/002-magiiic-commons.conf /etc/apache2/conf-enabled/
+  ln -s /opt/magic/etc/apache2/autoconfig.conf /etc/apache2/conf-enabled/
+	# a2dissite 000-default.conf
+	# a2ensite 000-magic-default.conf
+	# newwebsite magic "$(hostname --long)"
+	service apache2 restart
+  rm /var/www/html/index.*; rsync -Wavz /opt/magic/etc/apache2/placeholder/ /var/www/html/
+
+
+  sed -i "s:# *\(.*backports\):\\1:" /etc/apt/sources.list \
+  && apt update && apt upgrade \
+  && apt install -y certbot python-certbot-apache \
+  && certbot --apache -m certmaster@magiiic.com --agree-tos -d "$(hostname -f)"
+
+  if ! which composer >/dev/null
+  then
+    # Try to get last official version, otherwise fallback to apt
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php ./composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+    && php -r "unlink('composer-setup.php');" \
+    || apt install -y composer || end $?
+  fi
+
+  yesno "Install php xmlrpc?" && apt install php-xmlrpc
+  # yesno "Install php xcache?" && apt install php-xcache && service apache2 restart
+  ufw allow "WWW Full"
+fi
+
+which bind9-config >/dev/null || if yesno "Install name server?"; then apt install bind9 dnsutils || end $?; fi
+
+which drush || if yesno "Install drush?"
+then
+  log installing drush
+  sudo -u magic git clone -b master https://github.com/drush-ops/drush.git \
+  && mv ~magic/drush /opt/drush \
+  && su - magic -c "cd /opt/drush && git checkout 7.x" \
+  && ln -s /opt/drush/drush /usr/bin/ \
+  && cd /opt/drush && composer install \
+  && drush --version \
+  || end $? error installing drush
+fi
+
+which wp >/dev/null || if yesno "Install wp-cli?"; then
+  apt install -y apache2 apache2-utils libapache2-mpm-itk mariadb-client \
+  libapache2-mod-php php php-cli php-common php-curl php-gd php-imagick \
+  php-imap php-mysql php-mbstring php-zip php-soap || end $?
+  a2enmod rewrite
+  service apache2 reload
+  cd $(mktemp -d)
+  curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+  && echo "wp-cli.phar downloaded to $(realpath wp-cli.phar)" \
+  && php $PWD/wp-cli.phar --info  | grep "WP-CLI version:"\
+  && echo "and $PWD/wp-cli.phar it's working" \
+  && chmod +x wp-cli.phar \
+  && mv wp-cli.phar /usr/local/bin/wp \
+  && echo moved to  /usr/local/bin/wp \
+  || end $? error installing wp
+
+  [ -f /opt/magic/etc/bash_completion.d/wp-completion.bash ] \
+  && ln -s /opt/magic/etc/bash_completion.d/wp-completion.bash /etc/bash_completion.d/ \
+  || (
+    curl -L -O https://raw.githubusercontent.com/wp-cli/wp-cli/master/utils/wp-completion.bash \
+    && echo "downloaded $(realpath wp-completion.bash)" \
+    && mv wp-completion.bash /etc/bash_completion.d/ \
+  ) \
+  && echo "bash completion added to /etc/bash_completion.d/" \
+  || log $? wp installed but not bash completion
+fi
+
+if yesno "Install gitlab?"; then
+  echo "See up to date instructions on https://about.gitlab.com/install/#debian"
+  sudo apt-get install -y curl openssh-server ca-certificates || end $?
+  sudo apt-get install -y postfix || end $?
+  curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | sudo bash || end $?
+  sudo EXTERNAL_URL="https://$(hostname -f)" apt-get install gitlab-ee
+fi
+
+if yesno "Install video tools?"; then
+  echo "Video tools"
+  sudo apt install -y ffmpeg ffmpeg2theora ffmpegthumbnailer || end $?
+  sudo apt install -y mkvtoolnix mkvtoolnix-gui gpac || end $?
+  sudo apt install -y python3-mutagen || end $?
+fi
+
+if yesno "Automatic updates?"; then
+  # apt update && apt upgrade
+  apt install unattended-upgrades
+  grep -q "^\s*Unattended-Upgrade::Mail\s" /etc/apt/apt.conf.d/50unattended-upgrades \
+  || ( echo; echo "// Added by magic"; echo "Unattended-Upgrade::Mail webmaster@$(hostname -d);" ) | tee -a /etc/apt/apt.conf.d/50unattended-upgrades
+  dpkg-reconfigure --priority=low unattended-upgrades
+fi
+
+exit

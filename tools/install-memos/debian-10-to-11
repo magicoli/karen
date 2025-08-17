@@ -1,0 +1,39 @@
+#!/bin/bash
+
+## https://lecrabeinfo.net/mettre-a-jour-debian-10-vers-debian-11-bullseye.html
+
+lsb_release -a 2>/dev/null | grep "10.*buster"
+[ $? -ne 0 ] && echo "must be run on Debian 10 buster" >&2 && exit 1
+[ $UID -ne 0 ] && echo "must be run as root" >&2 && exit 1
+
+apt update && apt upgrade && apt full-upgrade && apt autoremove --purge || exit $?
+
+grep -l "buster" /etc/apt/sources.list && cp /etc/apt/sources.list /etc/apt/sources.buster
+
+# echo <<EOF >> /etc/apt/sources.list
+cat <<EOF >> test.list
+deb http://deb.debian.org/debian bullseye main contrib non-free
+deb-src http://deb.debian.org/debian bullseye main contrib non-free
+
+deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free
+deb-src http://deb.debian.org/debian-security/ bullseye-security main contrib non-free
+
+deb http://deb.debian.org/debian bullseye-updates main contrib non-free
+deb-src http://deb.debian.org/debian bullseye-updates main contrib non-free
+
+deb http://deb.debian.org/debian bullseye-backports main contrib non-free
+deb-src http://deb.debian.org/debian bullseye-backports main contrib non-free
+EOF
+
+# sed -i 's/buster/bullseye/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list
+for file in /etc/apt/sources.list.d/*.list
+do
+    mv "$file" "$file.buster"
+done
+
+apt update && apt upgrade --without-new-pkgs \
+&& apt full-upgrade \
+|| exit $?
+
+lsb_release -a
+echo "It must be time to reboot"

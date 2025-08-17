@@ -1,0 +1,164 @@
+# See /usr/share/postfix/main.cf.dist for a commented, more complete version
+
+
+# Debian specific:  Specifying a file name will cause the first
+# line of that file to be used as the name.  The Debian default
+# is /etc/mailname.
+#myorigin = /etc/mailname
+
+smtpd_banner = $myhostname ESMTP $mail_name (Debian/GNU)
+biff = no
+
+# appending .domain is the MUA's job.
+append_dot_mydomain = no
+
+# Uncomment the next line to generate "delayed mail" warnings
+#delay_warning_time = 4h
+
+readme_directory = no
+
+# See http://www.postfix.org/COMPATIBILITY_README.html -- default to 3.6 on
+# fresh installs.
+compatibility_level = 3.6
+
+
+
+# TLS parameters
+smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_tls_security_level=may
+
+smtp_tls_CApath=/etc/ssl/certs
+smtp_tls_security_level=may
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+
+
+smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
+myhostname = mungo.magiiic.com
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+myorigin = /etc/mailname
+mydestination = $myhostname, mungo.magiiic.com, localhost.magiiic.com, , localhost
+relayhost = 
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
+mailbox_size_limit = 0
+recipient_delimiter = +
+inet_interfaces = all
+inet_protocols = all
+
+# BEGIN CUSTOM CONFIGURATION - magiiic.com mail server
+# Custom settings added to pristine Postfix defaults
+
+# === BASIC IDENTITY ===
+mydomain = magiiic.com
+myhostname = mungo.$mydomain
+myorigin = mungo.magiiic.com
+mydestination = 
+    mungo.magiiic.com,
+    localhost.magiiic.com,
+    localhost
+
+# === MESSAGE LIMITS ===
+# Allow large attachments (100MB vs 10MB default)
+# RISK: Higher storage/bandwidth usage, potential DoS vector
+message_size_limit = 102400000
+
+# === VIRTUAL DOMAINS ===
+# Enable multi-domain hosting with Dovecot LMTP delivery
+virtual_alias_maps = hash:/etc/postfix/virtual
+virtual_mailbox_domains = $mydomain
+virtual_transport = lmtp:unix:private/dovecot-lmtp
+
+# === TLS CONFIGURATION ===
+# Force TLS for authentication, use Let's Encrypt certificates
+smtpd_use_tls = yes
+smtpd_tls_security_level = may
+smtpd_tls_auth_only = yes
+smtpd_tls_cert_file = /etc/letsencrypt/live/mail.magiiic.com-0002/fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/mail.magiiic.com-0002/privkey.pem
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+
+# === SASL AUTHENTICATION ===
+# Enable Dovecot SMTP authentication
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+
+# === BCC MONITORING ===
+# Copy all outgoing mail for monitoring/compliance
+# NEEDS REVIEW
+sender_bcc_maps = hash:/etc/postfix/sender_bcc
+
+# === SPF POLICY ===
+# Increase SPF check timeout (default: 30s)
+# NEEDS REVIEW (pro/cons)
+policy-spf_time_limit = 3600s
+
+# === MAILBOX DELIVERY ===
+# Use Dovecot LMTP for all mail delivery (virtual and local)
+# Local delivery also goes through LMTP for consistent Sieve processing
+# REMOVED: mailbox_command = procmail -a "$EXTENSION"
+
+# Require HELO and validate hostname format (conservative approach)
+# NOTE: reject_unknown_helo_hostname disabled - causes issues with cloud providers
+smtpd_helo_required = yes
+smtpd_helo_restrictions = 
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_invalid_helo_hostname,
+    reject_non_fqdn_helo_hostname,
+    check_client_access hash:/etc/postfix/rbl_override,
+    reject_rbl_client zen.spamhaus.org
+
+# Validate sender domains, use conservative RBL checks, custom whitelist and blacklist  
+# NOTE: RHSBL checks disabled - cause issues with legitimate providers
+smtpd_sender_restrictions = 
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_non_fqdn_sender,
+    reject_unknown_sender_domain,
+    check_client_access hash:/etc/postfix/rbl_override,
+    reject_rbl_client zen.spamhaus.org,
+    check_sender_access hash:/etc/postfix/sender_access
+
+# Multi-layer recipient validation with conservative RBL checks, DNSWL whitelist and policy service
+# NOTE: Only zen.spamhaus.org enabled - most conservative RBL with good reputation
+smtpd_recipient_restrictions = 
+    reject_non_fqdn_recipient,
+    reject_unknown_recipient_domain,
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    check_client_access hash:/etc/postfix/rbl_override,
+    permit_dnswl_client list.dnswl.org=127.0.[0..255].[1..3],
+    reject_rbl_client zen.spamhaus.org,
+    check_policy_service inet:127.0.0.1:10023,
+    permit
+
+# === OPTIONAL AGGRESSIVE ANTI-SPAM (commented out due to false positives) ===
+# Enable these if spam becomes unmanageable and you can handle legitimate mail being rejected:
+# Additional RBL checks (higher false positive risk):
+#   reject_rbl_client bl.spamcop.net,
+#   reject_rbl_client cbl.abuseat.org,
+# RHSBL domain-based checks (often block legitimate cloud providers):
+#   reject_rhsbl_helo dbl.spamhaus.org,
+#   reject_rhsbl_reverse_client dbl.spamhaus.org,
+#   reject_rhsbl_sender dbl.spamhaus.org,
+# HELO hostname validation (blocks many cloud/shared hosting providers):
+#   reject_unknown_helo_hostname,
+
+# Basic client restrictions
+smtpd_client_restrictions = 
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    defer_unauth_destination,
+    reject_unauth_pipelining
+
+# Relay restrictions (adds reject_unauth_destination vs default)
+smtpd_relay_restrictions = 
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    defer_unauth_destination,
+    reject_unauth_destination
+
+# END CUSTOM CONFIGURATION
+config_directory = /etc/postfix

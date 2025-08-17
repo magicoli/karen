@@ -1,0 +1,65 @@
+# Complete functional user sieve script example
+# Place in user's home: ~/.dovecot.sieve
+# Compile with: sievec ~/.dovecot.sieve
+#
+# This script demonstrates how users can override or supplement
+# the global junk-mailbox.sieve rules
+
+require ["fileinto", "imap4flags", "envelope", "regex"];
+
+# RESCUE RULES - Execute before global spam rules
+# These rules run first and can "rescue" mail from being marked as junk
+
+# Rescue trusted newsletters that might be marked as spam
+if header :contains "from" ["newsletter@example.com", "updates@github.com"] {
+    fileinto "INBOX.Newsletters";
+    setflag "\\Seen";
+    stop;  # Don't process further rules for this message
+}
+
+# Rescue work emails from specific domains
+if header :regex "from" ".*@(company\.com|partner\.org)" {
+    fileinto "INBOX.Work";
+    stop;
+}
+
+# CUSTOM FILTERING RULES
+# These rules handle non-spam messages for organization
+
+# High priority emails
+if header :contains "subject" ["[URGENT]", "[CRITICAL]"] {
+    fileinto "INBOX.Priority";
+    setflag "\\Flagged";
+}
+
+# Mailing lists
+if header :contains "list-id" "linux-kernel.vger.kernel.org" {
+    fileinto "INBOX.Lists.Kernel";
+}
+
+# Social media notifications
+if header :contains "from" ["noreply@facebook.com", "notify@twitter.com"] {
+    fileinto "INBOX.Social";
+    setflag "\\Seen";
+}
+
+# CUSTOM SPAM RULES
+# Additional spam detection beyond SpamAssassin
+
+# Block obvious spam subjects
+if header :regex "subject" "(?i)(viagra|cialis|lottery|prince|inheritance)" {
+    fileinto "Junk";
+    setflag "\\Seen";
+    stop;
+}
+
+# Block suspicious from addresses
+if header :regex "from" ".*@.*\.(tk|ml|ga|cf)$" {
+    fileinto "Junk";
+    setflag "\\Seen";
+    stop;
+}
+
+# IMPORTANT: Do not add a final rule that catches all mail
+# Let the global junk-mailbox.sieve rules process remaining messages
+# Global rules will move SpamAssassin-detected spam to Junk folder

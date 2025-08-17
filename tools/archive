@@ -1,0 +1,193 @@
+#!/bin/bash
+
+ARCHIVES=/home/archives
+BINDCONF=/etc/bind/named.conf.master
+MAILSPOOL=/var/mail
+DEBUG=yes
+
+export PATH=$PATH:$(dirname "$0")
+. $(which helpers) || exit 1
+
+cd "$1" || end 1 Cannot cd do $source
+source=$(pwd)
+real=$(readlink -f "$1")
+folder=$(basename "$source")
+
+ARCHIVES=$ARCHIVES/$(hostname -s)
+mkdir -p $ARCHIVES || end 2 could not create archives base folder $ARCHIVES
+cd $ARCHIVES || end 2 could cd to archives base folder $ARCHIVES
+ARCHIVES=$PWD
+cd $(dirname "$source") || end 1 Cannot cd do $(dirname $source)
+
+echo "$PGM: Archive and delete $source"
+printf "Users: "
+grep $source /etc/passwd > $TMP.passwd
+grep $source /etc/shadow > $TMP.shadow
+cut -d ":" -f 1 $TMP.passwd $TMP.shadow | sort -u > $TMP.users
+count=$(cat $TMP.users 2>/dev/null | wc -l)
+#[ $count -gt 0 ] && users=" ($(cat $TMP.users 2>/dev/null | tr "\n" " " | sed "s/ *$//"))"
+echo "$count$users"
+cat $TMP.users 2>/dev/null | sed "s/^/  /"
+
+printf "Aliases: "
+cat $TMP.users | while read user
+do
+    grep -e "^$user:" -e ": $user$" /etc/aliases > $TMP.aliases
+done
+cat $TMP.aliases 2>/dev/null | wc -l
+cat $TMP.aliases 2>/dev/null | sed "s/^/  /"
+
+printf "Domains: "
+echo $source | grep "/domains/[^/]*$" | sed "s|.*/domains/||" | cut -d "/" -f 1 > $TMP.domains
+cat $TMP.domains | wc -l
+cat $TMP.domains 2>/dev/null | sed "s/^/  /"
+
+printf "Mail mapping: "
+(
+    cat $TMP.domains | while read domain
+    do
+	grep -e "@$domain[^a-z\.-]" \
+	    -e  "^$domain[[:blank:]]" \
+	    -e "[[:blank:]]$domain$" /etc/postfix/virtual
+    done
+    cat $TMP.users | while read user
+    do
+	grep -e "^$user[[:blank:]]" -e "[[:blank:]]$user$" /etc/postfix/virtual
+    done
+) | sort -u > $TMP.virtual
+cat $TMP.virtual | wc -l
+cat $TMP.virtual 2>/dev/null | sed "s/^/  /"
+
+printf "Mail inboxes: "
+cat $TMP.users 2>/dev/null | while read user
+do
+    [ -f $MAILSPOOL/$user ] || continue
+#    grep -hq "." $MAILSPOOL/$user || continue
+    echo "$MAILSPOOL/$user"
+done > $TMP.inboxes
+cat $TMP.inboxes | wc -l
+cat $TMP.inboxes 2>/dev/null | sed "s/^/  /"
+
+printf "Websites: "
+grep -lri "^[[:blank:]]*DocumentRoot[[:blank:]]*$source" /etc/apache2/sites-available > $TMP.apache
+cat $TMP.apache | wc -l
+cat $TMP.apache 2>/dev/null | sed "s/^/  /"
+
+printf "DNS zones: "
+cat $TMP.domains | while read domain
+do
+    ls /var/namedb/*/$domain 2>/dev/null | while read zonefile
+    do
+	echo $zonefile
+#	readlink -f "$zonefile" | grep -v /templates/
+    done
+done | sort > $TMP.zones
+cat $TMP.zones | wc -l
+cat $TMP.zones 2>/dev/null | sed "s/^/  /"
+
+for tmp in $(du -sk $TMP.* | grep ^0 | cut -f 2)
+do
+    rm $tmp
+done
+
+read -p "Archive AND DELETE $source
+and all related items ? (y/N) " yesno
+
+[ "$yesno" != "y" ] && end "Aborted"
+
+[ -e "$source/ARCHIVES" ] && log "moved $source/ARCHIVES to $(stampfile "$source/ARCHIVES")"
+mkdir "$source/ARCHIVES" || end 3 could not create ARCHIVES folder
+
+log adding preferences to archive
+for file in $TMP.*
+do
+    filename=$(echo "$file" | sed "s/.*\.//")
+    cp "$file" "$source/ARCHIVES/$filename"
+done
+log adding zone files
+cat $TMP.zones 2>/dev/null | while read zone
+do
+    domain=$(basename $zone)
+    cp "$zone" "$source/ARCHIVES/$domain.zone"
+done
+
+cat $TMP.users 2>/dev/null | while read user
+do
+    [ -f $MAILSPOOL/$user ] || continue
+    grep -hq "." $MAILSPOOL/$user || continue
+    log adding $user INBOX to archive
+    cp $MAILSPOOL/$user "$source/ARCHIVES/$user.INBOX" 2>/dev/null \
+	&& echo "$MAILSPOOL/$user" >> $TMP.spools
+done
+
+archive="$ARCHIVES/$folder-$(stamp).tgz"
+log "archiving $source"
+log "to $archive"
+
+tar cfz "$archive" "$folder" || end 4 error tar cfz "$archive" "$folder"
+[ -f "$archive" ] || end 5 no archive created
+du -sk "$archive" | grep -q ^0 && end 6 empty archive created
+log "$archive complete"
+
+cat $TMP.users 2>/dev/null | while read user
+do
+    id "$user" 2>/dev/null >/dev/null || continue
+    log "delete user $user"
+    userdel "$user"
+done
+
+cat $TMP.zones 2>/dev/null | sort -u | while read zonefile
+do
+    log delete zone $zonefile
+    grep -v "$zonefile" $BINDCONF > $TMP.newbindconf
+    diff $BINDCONF $TMP.newbindconf | patch $BINDCONF || end 6 dunnno what happened >/dev/null
+    rm "$zonefile"
+    RELOADBIND=yes
+done
+
+cat $TMP.apache 2>/dev/null | sort -u | while read conffile
+do
+    log disable $conffile
+    a2dissite $(basename "$conffile") \
+	| grep -q "Run.*reload.*to activate" \
+	&& touch $TMP.reloadapache
+    log delete $conffile
+    rm "$conffile"
+done
+
+cat $TMP.spools 2>/dev/null | sort -u | while read spool
+do
+    log delete inbox $spool
+    rm "$spool"
+done
+
+for currentconf in /etc/aliases /etc/postfix/virtual /etc/password /etc/shadow
+do
+    rm -f "$TMP.diff"
+    blacklist=$TMP.$(basename $currentconf)
+    newconf=$TMP.new.$confname
+
+    [ -f "$blacklist" ] || continue
+    log checking conf $currentconf
+#    cat $blacklist | sed "s|^|$blacklist: |"
+    grep -v -f $blacklist $currentconf > $newconf
+    diff $currentconf $newconf | tee $TMP.diff | grep -q . || continue
+    log $(patch $currentconf $TMP.diff)
+    RELOAD_$confname=yes
+done
+
+[ "$RELOAD_passwd" -o "$RELOAD_shadow" ] && log reloading users && pwconv
+[ "$RELOAD_aliases" ] && log reload aliases && newaliases
+[ "$RELOAD_virtual" ] && log reload virtual mails && postmap /etc/postfix/virtual
+[ "$RELOADBIND" = yes ] && log "reloading bind zones" && rndc reload
+[ -f "$TMP.reloadapache" ] && log "reloading apache" 2>/dev/null && service apache2 reload
+
+log delete directory $source
+rm -rf "$source"
+
+log "TODO: delete only symlink if symlink given"
+log "TODO: update webin/virtualmin"
+log "TODO: include mysql and pgsql db in archive"
+log "TODO: include apache log files"
+
+end

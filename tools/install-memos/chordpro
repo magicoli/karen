@@ -1,0 +1,12 @@
+# https://www.chordpro.org/chordpro/chordpro-install-on-linux/
+
+sudo apt-get install libwx-perl
+sudo cpan install chordpro
+# cmd-line:
+chordpro
+# gui:
+wxchordpro
+
+# https://www.gillesmaire.com/tiki-index.php?page=chordV
+# https://sourceforge.net/projects/chordv/files/
+# source code: git clone https://git.code.sf.net/p/chordv/code chordv

@@ -1,0 +1,8 @@
+PAGE=$1
+TMP=.daily.tmp
+
+echo "<x-html>" > $TMP
+lynx -source $1 >> $TMP
+echo "</x-html>" >> $TMP
+ 
+cat $TMP | sendmail ovh

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+IFS=":"
+OLDBASE=/home/dave
+
+cat $@ | grep -v virtuser \
+	| sed "s:/usr/local/bin/bash:/bin/bash:" \
+	| sed "s:/bin/csh:/bin/bash:" \
+	| sed "s|:/sbin/nologin|:/usr/sbin/nologin|" \
+	| while read user pass uid gid class change expire fullname home shell
+do
+	printf "$user "
+	id $user 2>/dev/null >/dev/null && echo "exists" && continue
+	newhome=${home/\/data/}
+	oldhome=$OLDBASE$home
+	echo "$fullname" | grep "^$" >/dev/null && fullname=$user # || name=$fullname
+	# shell=/bin/bash
+	# echo "user $user"
+	# echo "pass $pass"
+	# echo "uid $uid"
+	# echo "gid $gid"
+	# echo "class $class"
+	# echo "change $change"
+	# echo "expire $expire"
+	# echo "fullname $fullname"
+	# echo "home $home"
+	# echo "newhome $newhome"
+	# echo "shell $shell"
+	useradd -c "$fullname" -d $newhome -g "$gid" -M -o -p "$pass" -s "$shell" -u "$uid" $user && printf "created " || continue
+	[ -d $newhome ] && echo "home exists" && continue
+	[ ! -d $oldhome ] && echo "no $oldhome" && continue
+	mv $oldhome $newhome && echo "home moved" && continue
+done

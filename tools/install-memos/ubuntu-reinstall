@@ -1,0 +1,54 @@
+sudo apt update
+sudo apt upgrade -y
+
+sudo apt install barrier
+sudo apt install curl mpv barrier 
+sudo apt install g810-led 
+sudo apt install python
+sudo apt install kate
+sudo apt install emacs apache2 php libapache2-mod-php mariadb-server php-mysql php-curl php-gd php-intl php-json php-mbstring php-xml php-zip
+sudo apt install git
+sudo dpkg -i /home/magic/Downloads/atom-amd64-20220327-075055.deb
+sudo apt install speedtest-cli
+sudo apt install net-tools screen
+sudo apt install util-linux
+/home/magic/Installations/wordpress/wp-cli-install
+sudo apt install -y apache2 libapache2-mpm-itk apache2-utils imagemagick libapache2-mod-fcgid libapache2-mod-php libexpat1 memcached php-cli php-common php-curl php-gd php-imagick php-imap php php-intl php-memcached php-mysql php-pgsql php-pspell php-tidy php-xml php-pear libapache2-mpm-itk mariadb-client
+sudo pear channel-update pear.php.net
+sudo pear install pear/XML_RPC2
+sudo apt install nextcloud-desktop dolphin-nextcloud
+sudo apt install jq
+sudo apt install wmctrl
+sudo apt install composer
+sudo apt install espeak-ng speech-dispatcher-espeak-ng mbrola mbrola-en1 mbrola-fr1 mbrola-fr2 mbrola-fr3 mbrola-fr4 mbrola-fr5 mbrola-fr6 mbrola-fr7
+sudo apt install dconf-cli; sudo dconf update
+sudo dpkg -i /home/magic/Installations/skype/skypeforlinux-64.deb
+sudo apt install pv
+# https://github.com/marin-m/SongRec
+
+sudo apt-add-repository ppa:marin-m/songrec -y -u
+sudo apt install songrec -y
+songrec
+sudo apt install id3v2
+sudo a2enmod rewrite
+sudo service apache2 restart
+sudo npm install -g gulp-cli
+sudo npm install -g grunt-cli
+apt install samba samba-common-bin samba-vfs-modules winbind bind9 bind9utils ldb-tools ntp smbldap-tools libnss-winbind libpam-winbind
+apt install whois
+sudo apt update && sudo apt install ./plexmediaserver_1.26.1.5798-99a4a6ac9_amd64.deb 
+sudo apt install pass
+sudo apt install apache2 apache2-utils barrier composer curl dolphin-nextcloud emacs espeak-ng g810-led git id3v2 imagemagick jq libapache2-mod-fcgid libapache2-mod-php libapache2-mpm-itk libexpat1 mariadb-client mariadb-server mbrola mbrola-en1 mbrola-fr1 mbrola-fr2 mbrola-fr3 mbrola-fr4 mbrola-fr5 mbrola-fr6 mbrola-fr7 memcached mpv net-tools nextcloud-desktop php php-cli php-common php-curl php-gd php-imagick php-imap php-intl php-json php-mbstring php-memcached php-mysql php-pear php-pgsql php-pspell php-tidy php-xml php-zip pv screen speech-dispatcher-espeak-ng speedtest-cli util-linux whois wmctrl
+sudo apt install sqlite3
+sudo apt install caffeine
+sudo apt install /home/magic/Installations/skype/skypeforlinux-64.deb
+sudo apt install libnotify-bin
+sudo apt install guvcview
+sudo apt install /home/magic/Installations/zoom/zoom_amd64.deb
+sudo a2enmod rewrite
+sudo apt install poedit
+wp package install wp-cli/dist-archive-command:@stable
+sudo apt install subversion
+wget https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar && chmod +x phpcs.phar && sudo mv -v phpcs.phar /usr/local/bin/phpcs
+sudo apt update && sudo apt install uglifyjs
+git clone https://github.com/thevinter/styli.sh.git && sudo mv styli.sh /opt/ && cd /opt/styli.sh

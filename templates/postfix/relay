@@ -1,0 +1,5 @@
+# Example relay permissions - customize per deployment
+# Add your managed domains here
+
+example_domain OK
+# ... add more domains as needed ...

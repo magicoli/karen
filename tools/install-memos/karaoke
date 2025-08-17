@@ -1,0 +1,12 @@
+mplayer -af karaoke "$file"
+mplayer -ao pcm:file=karaoke.wav -af karaoke "$file"
+
+# phase cancellation method (remove centered part of the sound)
+ffmpeg -i file.mp3 -af pan="stereo|c0=c0|c1=-1*c1" -ac 1 karaoke.mp3
+
+# Sox method (convert to wav first?)
+sox input.wav output.wav oops
+
+# Spleeter method (split vocals with artificial neural networks)
+pip install spleeter
+spleeter separate -i song.webm -p spleeter:2stems -o output

@@ -1,0 +1,39 @@
+#!/bin/sh
+
+export LC_ALL=C
+
+EXCLUDE="[0-9]@my.booking|creditcontrol.gp@booking.com|customer.service@booking.com|@paypal"
+
+PGM=$(basename "$0")
+TMP=/tmp/$PGM.$$
+MAILPATTERN="[a-zA-Z0-9\._-]*@[a-zA-Z0-9\._-]*\.[a-zA-Z0-9]*"
+BLANK="[[:blank:]][[:blank:]]*"
+ANYBLANK="[[:blank:]]*"
+
+source=$1
+dest=$2
+
+[ ! "$dest" ] && echo "usage: $PGM source.csv destination" >&2 && exit 1
+
+printf "" > $TMP.mails
+cat "$source" \
+	| sed "s/[\[\]]*//g" \
+	| sed "s/>*//g" \
+	| sed "s/<*//g" \
+	| grep @ | cut -f 2-3,7 \
+	| sed "s/^$ANYBLANK\(.*\)$BLANK\($MAILPATTERN\) *$/\\2 \\1/" \
+	| sort -u | grep "@[^ ]*\.[a-z]" \
+	| egrep -v "$EXCLUDE" \
+	| sort -u | sort -r \
+	| while read mail name
+do
+	mail=$(echo "$mail"| grep "@" | tr "[:upper:]" "[:lower:]" | sed "s/[<>'\"]*//g")
+	[ ! "$mail" ] && continue
+	name=$(echo "$name" | sed "s/$mail//" | sed "s/$BLANK/ /g" | grep -v "@")
+	grep -q "<$mail>" $TMP.mails && continue
+	echo "<$mail> $name" >> $TMP.mails 
+done
+
+cat $TMP.mails | sed "s/ *$//" | sort -u > "$dest"
+
+rm -f $TMP.*

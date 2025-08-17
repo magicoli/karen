@@ -1,0 +1,5 @@
+# https://github.com/marin-m/SongRec
+
+sudo apt-add-repository ppa:marin-m/songrec -y -u
+sudo apt install songrec -y
+songrec

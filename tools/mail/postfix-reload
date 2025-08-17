@@ -1,0 +1,36 @@
+#!/bin/bash
+
+newaliases && echo /etc/aliases remapped >&2 || exit $?
+
+(
+echo "# built from /etc/postfix/virtual.d/"
+echo "# $(date)"
+echo
+) > /etc/postfix/virtual
+ls /etc/postfix/virtual.d/* | grep -v "~$" | while read map
+do
+  echo "# $map" >> /etc/postfix/virtual
+  cat $map >> /etc/postfix/virtual
+  echo >> /etc/postfix/virtual
+done
+
+(
+# grep "^[^#]*\shash:.*/etc/postfix" /etc/postfix/main.cf | sed -e "s/.*hash://" -e "s/, *$//"
+grep "^[^#]*\shash:.*/etc/postfix" /etc/postfix/main.cf | tr ", " "\n" | grep hash | sed -e "s/.*hash://" -e "s/, *$//"
+ls /etc/postfix/*.db | sed "s/.db$//"
+) | sort -u | while read file
+do
+  [ -f $file ] || continue
+  printf "$file " && postmap $file && echo remapped >&2 || exit $?
+done
+service postfix reload && echo postfix reloaded >&2
+
+cat /etc/postfix/virtual | while read alias foo
+do
+  echo $alias | grep -E "^[a-z0-9_\.-]+@[a-z0-9-]+\." | while read mail foo
+  do
+    grep -q $mail /etc/postgrey/whitelist_recipients && continue
+    echo $mail | tee -a /etc/postgrey/whitelist_recipients | sed "s/$/ whitelisted/"
+  done
+done
+service postgrey restart && echo postgrey restarted >&2

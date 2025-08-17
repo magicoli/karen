@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+echo "Don't use as is, read doc before"
+echo "From Alex Harvey's page:"
+echo "https://alexharv074.github.io/puppet/2017/10/04/merge-a-git-repository-and-its-history-into-a-subdirectory-of-a-second-git-repository.html"
+exit 
+
+first= # first commit, initial commit
+last= # last commit
+subdir=subdir
+
+git filter-branch --tree-filter '
+  first='"$first"'
+  last='"$last"'
+
+  subdir='"$subdir"'
+  log_file=/tmp/filter.log
+
+  [ "$GIT_COMMIT" = "$first" ] && seen_first=true
+
+  if [ "$seen_first" = "true" ] && [ "$seen_last" != "true" ]; then
+    echo "=== $GIT_COMMIT: making changes"
+    files=$(git ls-tree --name-only $GIT_COMMIT)
+    mkdir -p $subdir
+    for i in $files; do
+      mv -v $i $subdir || echo "ERR: mv $i $subdir failed"
+    done
+  else
+    echo "=== $GIT_COMMIT: ignoring"
+  fi \
+    >> $log_file
+
+  [ "$GIT_COMMIT" = "$last" ] && seen_last=true
+
+  status=0  # tell tree-filter never to fail
+'

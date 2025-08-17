@@ -1,0 +1,86 @@
+# Google services compatibility whitelist
+# NEEDS REVIEW: Update Google IP ranges periodically
+# Last update: 2025-08-16
+
+# Google mail services (Gmail, Google Workspace)
+# Updated 2025-08-16 - Core mail server ranges only
+/mail-.*\.google\.com$/	OK
+/.*\.googlemail\.com$/	OK
+64.233.160.0/19   permit
+66.102.0.0/20   permit
+66.249.64.0/19   permit
+72.14.192.0/18   permit
+74.125.0.0/16   permit
+108.177.0.0/17   permit
+142.250.0.0/15   permit
+172.217.0.0/16   permit
+172.253.0.0/16   permit
+173.194.0.0/16   permit
+209.85.128.0/17   permit
+216.58.192.0/19   permit
+216.239.32.0/19   permit
+2001:4860::/32   permit
+2404:6800::/32   permit
+2607:f8b0::/32   permit
+2800:3f0::/32   permit
+2a00:1450::/32   permit
+2c0f:fb50::/32   permit
+
+# Microsoft/Outlook.com services 
+# Often flagged due to shared infrastructure
+/outlook\.com$/   OK
+/hotmail\.com$/   OK
+/.*\.protection\.outlook\.com$/   OK
+40.92.0.0/15   permit
+40.107.0.0/16   permit
+52.100.0.0/14   permit
+104.47.0.0/17   permit
+
+# Amazon SES (many businesses use this)
+# Frequently gets RBL listings due to abuse
+/amazonses\.com$/   OK
+23.251.224.0/19   permit
+54.240.0.0/12   permit
+69.169.224.0/20   permit
+
+# OVH hosting (popular in Europe)
+# Often caught in RBLs due to shared hosting
+/.*\.ovh\.net$/   OK
+91.121.0.0/16   permit
+176.31.0.0/16   permit
+178.32.0.0/15   permit
+
+# MailChimp/Mandrill (newsletter services)
+# Legitimate marketing that sometimes gets flagged
+/.*\.mcsv\.net$/   OK
+/.*\.mandrillapp\.com$/   OK
+
+# SendGrid (transactional email service)
+# Very commonly used by web applications
+/.*\.sendgrid\.net$/   OK
+
+# Mailgun (transactional email service)  
+/.*\.mailgun\.org$/   OK
+
+# Major European ISPs (frequently caught in RBLs due to shared infrastructure)
+# Orange France - major French ISP
+/.*\.orange\.fr$/   OK
+/.*\.wanadoo\.fr$/   OK
+/.*\.francetelecom\.fr$/   OK
+81.252.0.0/14   permit
+80.12.0.0/14   permit
+193.252.0.0/16   permit
+
+# Proximus Belgium - major Belgian ISP  
+/.*\.proximus\.be$/   OK
+/.*\.skynet\.be$/   OK
+/.*\.belgacom\.be$/   OK
+195.238.0.0/16   permit
+213.118.0.0/16   permit
+87.64.0.0/16   permit
+
+# MAINTENANCE NOTES:
+# 1. Monitor mail logs for: "reject: RCPT from ... 554 Service unavailable; Client host [IP] blocked"
+# 2. Add specific IPs/domains that legitimate senders get blocked on
+# 3. Update major provider IP ranges quarterly (they change frequently)
+# 4. Test changes in non-production first if possible
