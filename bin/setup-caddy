@@ -19,7 +19,7 @@ esac
 service=caddy.service
 
 env_status() {
-    $MASTER/php/tools/setup-php status
+    $KAREN_BIN/setup-php status
     if [ -f /etc/caddy/environment.caddyfile ]; then
         activeenv=$(basename $(realpath /etc/caddy/environment.caddyfile 2>/dev/null) .caddyfile)
     else
@@ -61,15 +61,15 @@ case "$env" in
         exit
 esac
 
-$MASTER/php/tools/setup-php $enable $mode
+$KAREN_BIN/setup-php $enable $mode
 
 echo "Switching Caddy to $enable environment..."
 
 # Link the main system environment config file
 # sudo rm -f "/etc/caddy/environment.caddyfile" || true
-sudo ln -sf "$MASTER/caddy/environment/common.caddyfile" "/etc/caddy/"
+sudo ln -sf "$KAREN_PRESETS/caddy/environment/common.caddyfile" "/etc/caddy/"
 # sudo rm -f "/etc/caddy/environment.caddyfile" || true
-sudo ln -sf "$MASTER/caddy/environment/$enable.caddyfile" "/etc/caddy/environment.caddyfile"
+sudo ln -sf "$KAREN_PRESETS/caddy/environment/$enable.caddyfile" "/etc/caddy/environment.caddyfile"
 
 # Make all configs available, enabled them on a server-base, defaults set during installation
 # Use same semantic as in apache and nginx
@@ -81,8 +81,8 @@ sudo ln -sf "$MASTER/caddy/environment/$enable.caddyfile" "/etc/caddy/environmen
 && sudo mkdir -p /etc/caddy/conf-enabled \
 && sudo chown caddy:caddy /etc/caddy/conf-enabled
 
-ls $MASTER/caddy/conf/*.caddyfile >/dev/null 2>/dev/null \
-&& sudo ln -sf $MASTER/caddy/conf/*.caddyfile /etc/caddy/conf-available/
+ls $KAREN_PRESETS/caddy/conf/*.caddyfile >/dev/null 2>/dev/null \
+&& sudo ln -sf $KAREN_PRESETS/caddy/conf/*.caddyfile /etc/caddy/conf-available/
 
 # Same logic for snippets, except they don't need -available/-enabled stuff
 [ ! -d "/etc/caddy/snippets/" ] \
@@ -92,14 +92,15 @@ ls $MASTER/caddy/conf/*.caddyfile >/dev/null 2>/dev/null \
 # Setup local directory for server-specific snippet overrides
 # This directory contains server-specific configs manually chosen by server admin
 # Available presets are in the repository under local-presets/ for reference
-[ ! -d "/etc/caddy/local/" ] \
-&& sudo mkdir -p /etc/caddy/local \
-&& sudo chown caddy:caddy /etc/caddy/local
+# [ ! -d "/etc/caddy/local/" ] \
+# && sudo mkdir -p /etc/caddy/local \
+# && sudo chown caddy:caddy /etc/caddy/local
 
-if ! realpath /etc/caddy/snippets | grep -qv "^$MASTER/etc/caddy/snippets$"; then
+if [ "$(realpath /etc/caddy/snippets)" != "$KAREN_PRESETS/caddy/snippets" ]; then
     echo "updating snippets"
-    ls $MASTER/caddy/snippets/*.caddyfile >/dev/null 2>/dev/null \
-    && sudo ln -sf $MASTER/caddy/snippets/*.caddyfile /etc/caddy/snippets/
+    end 0 DIFFERENT PATH
+    ls $KAREN_PRESETS/caddy/snippets/*.caddyfile >/dev/null 2>/dev/null \
+    && sudo ln -sf $KAREN_PRESETS/caddy/snippets/*.caddyfile /etc/caddy/snippets/
 fi
 
 sudo systemctl $mode $service --no-pager && err=0 || err=$?

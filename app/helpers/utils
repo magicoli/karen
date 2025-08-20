@@ -27,7 +27,7 @@ log() {
     [ -z "$1" ] && return
     err=$(echo "$1" | grep -E "^[0-9]+$" || true)
     [ "$err" ] && shift
-    [ "$1" = "-n" ] && n="-n" && shift || n=
+    [ "${1:-}" = "-n" ] && n="-n" && shift || n=
     [ -n "$err" ] || karen_debug || return 0
     echo $n "$PGM: $@" >&2
 }
