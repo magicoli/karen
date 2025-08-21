@@ -39,12 +39,12 @@ then
 	# yesno "delete these websites?" && echo || end Cancelled
 	echo ssh root@$server rm $(cat $TMP.apache.enabled) >> $TMP.postprocess
 fi
-if grep /etc/passwd $TMP.configs > $TMP.users
+if grep "/etc/passwd" $TMP.configs > $TMP.users
 then
 	echo "Found $(cat $TMP.users | wc -l) user and group entries"
 	cat $TMP.users | sed "s/^/  /g"
 	# yesno "delete these users and groups?" && echo || end Cancelled
-	grep /etc/passwd: $TMP.users | cut -d : -f 2 | while read user
+	grep "/etc/passwd:" $TMP.users | cut -d : -f 2 | while read user
 	do
 		echo ssh root@$server userdel -d $user >> $TMP.postprocess
 	done
